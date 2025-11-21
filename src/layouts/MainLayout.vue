@@ -136,11 +136,31 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
-const tab = ref('demanda') // tab activa por defecto
+const route = useRoute()
+
+// Mapa tab -> ruta (coincide con routes.js)
+const tabRouteMap = {
+  vista: '/vista-general',
+  mapping: '/skill-mapping',
+  demanda: '/demanda-talento',
+  brechas: '/brechas-skill'
+}
+
+// Detecta qué tab va con la ruta actual
+function getTabFromPath (path) {
+  if (path.startsWith(tabRouteMap.mapping)) return 'mapping'
+  if (path.startsWith(tabRouteMap.demanda)) return 'demanda'
+  if (path.startsWith(tabRouteMap.brechas)) return 'brechas'
+  // por defecto: Vista General
+  return 'vista'
+}
+
+// Tab activa según ruta inicial
+const tab = ref(getTabFromPath(route.path))
 
 // En producción esto vendría del login / store
 const user = {
@@ -151,10 +171,20 @@ function navigate (path) {
   router.push(path)
 }
 
+// Cuando haces click en una tab
 function changeTab (tabName) {
   tab.value = tabName
-  // aquí luego puedes hacer router.push según el tab si quieres
+  const path = tabRouteMap[tabName]
+  if (path) router.push(path)
 }
+
+// Si navegas por otros lados, mantenemos el tab sincronizado
+watch(
+  () => route.path,
+  newPath => {
+    tab.value = getTabFromPath(newPath)
+  }
+)
 </script>
 
 <style lang="scss" scoped>
@@ -226,7 +256,7 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 .right-section {
   display: flex;
   align-items: center;
-  gap: 10px; /* menos espacio entre + y usuario */
+  gap: 10px;
 }
 
 .add-btn {

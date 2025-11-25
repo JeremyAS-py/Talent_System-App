@@ -1,26 +1,34 @@
 const routes = [
+  // Ruta inicial: Login
   {
     path: '/',
+    name: 'login',
+    component: () => import('src/components/auth/LoginForm.vue'),
+  },
+
+  // Ruta para la app principal con MainLayout
+  {
+    path: '/app',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      // redirige / -> /vista-general
+      // redirige /app -> /app/vista-general
       {
         path: '',
-        redirect: '/vista-general'
+        redirect: '/app/vista-general',
       },
 
       // Vista General (IndexPage)
       {
         path: 'vista-general',
         name: 'vista-general',
-        component: () => import('pages/IndexPage.vue')
+        component: () => import('pages/IndexPage.vue'),
       },
 
       // Skill Mapping (por ahora mismo componente; luego lo cambias)
       {
         path: 'skill-mapping',
         name: 'skill-mapping',
-        component: () => import('pages/IndexPage.vue')
+        component: () => import('pages/IndexPage.vue'),
         // TODO: cambia a pages/SkillMappingPage.vue cuando lo tengas
       },
 
@@ -28,7 +36,7 @@ const routes = [
       {
         path: 'demanda-talento',
         name: 'demanda-talento',
-        component: () => import('pages/IndexPage.vue')
+        component: () => import('pages/IndexPage.vue'),
         // TODO: cambia a pages/DemandaTalentoPage.vue
       },
 
@@ -36,7 +44,7 @@ const routes = [
       {
         path: 'brechas-skill',
         name: 'brechas-skill',
-        component: () => import('pages/IndexPage.vue')
+        component: () => import('pages/IndexPage.vue'),
         // TODO: cambia a pages/BrechasSkillPage.vue
       },
 
@@ -44,24 +52,24 @@ const routes = [
       {
         path: 'crear-vacante',
         name: 'crear-vacante',
-        component: () => import('pages/CreateVacancyPage.vue')
+        component: () => import('pages/CreateVacancyPage.vue'),
       },
 
       // Registrar colaborador (de momento reusa IndexPage)
       {
         path: 'colaboradores/registrar',
         name: 'registrar-colaborador',
-        component: () => import('pages/IndexPage.vue')
+        component: () => import('pages/IndexPage.vue'),
         // TODO: cambia a pages/RegistrarColaboradorPage.vue cuando la crees
-      }
-    ]
+      },
+    ],
   },
 
   // Siempre al final
   {
     path: '/:catchAll(.*)*',
-    component: () => import('pages/ErrorNotFound.vue')
-  }
+    component: () => import('pages/ErrorNotFound.vue'),
+  },
 ]
 
 export default routes

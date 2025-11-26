@@ -1,7 +1,7 @@
 <template>
   <q-page class="bg-page q-pa-lg demanda-page">
     <!-- TÍTULO -->
-    <div class="q-mb-xl">
+    <div class="header-block q-mb-lg">
       <div class="page-title">Demanda de Talento</div>
       <div class="page-subtitle">
         Visión de vacantes internas, cobertura y skills requeridos por rol.
@@ -9,85 +9,86 @@
     </div>
 
     <!-- =================== BARRA DE FILTROS =================== -->
-    <div class="row q-col-gutter-md q-mb-lg items-center">
-      <!-- Buscador -->
-      <div class="col-12 col-md-3">
-        <q-input
-          dense
-          outlined
-          v-model="filtroTexto"
-          placeholder="Buscar vacante..."
-          class="filter-control"
-        >
-          <template v-slot:prepend>
-            <q-icon name="search" size="18px" />
-          </template>
-        </q-input>
-      </div>
+    <div class="row items-center q-mb-lg filters-row">
+      <!-- BLOQUE IZQUIERDO: 4 CONTROLES ALINEADOS -->
+      <div class="col-grow">
+        <div class="row items-center q-gutter-sm filters-main">
+          <!-- Buscar -->
+          <div class="filter-item">
+            <q-input
+              dense
+              outlined
+              v-model="filtroTexto"
+              placeholder="Buscar vacante..."
+              class="filter-control"
+            >
+              <template v-slot:prepend>
+                <q-icon name="search" size="18px" />
+              </template>
+            </q-input>
+          </div>
 
-      <!-- Selects -->
-      <div class="col-12 col-md-3">
-        <q-select
-          dense
-          outlined
-          v-model="filtroDepartamento"
-          :options="departamentoOptions"
-          emit-value
-          map-options
-          class="filter-control"
-          popup-content-class="filter-menu"
-        />
-      </div>
+          <!-- Departamentos -->
+          <div class="filter-item">
+            <q-select
+              dense
+              outlined
+              v-model="filtroDepartamento"
+              :options="departamentoOptions"
+              emit-value
+              map-options
+              class="filter-control"
+              popup-content-class="filter-menu"
+            />
+          </div>
 
-      <div class="col-12 col-md-3">
-        <q-select
-          dense
-          outlined
-          v-model="filtroRol"
-          :options="rolOptions"
-          emit-value
-          map-options
-          class="filter-control"
-          popup-content-class="filter-menu"
-        />
-      </div>
+          <!-- Roles -->
+          <div class="filter-item">
+            <q-select
+              dense
+              outlined
+              v-model="filtroRol"
+              :options="rolOptions"
+              emit-value
+              map-options
+              class="filter-control"
+              popup-content-class="filter-menu"
+            />
+          </div>
 
-      <div class="col-12 col-md-3 row justify-end items-center q-gutter-sm">
-        <div class="col-auto col-md-auto">
-          <q-select
-            dense
-            outlined
-            v-model="filtroSkill"
-            :options="skillOptions"
-            emit-value
-            map-options
-            class="filter-control"
-            popup-content-class="filter-menu"
-          />
+          <!-- Skills -->
+          <div class="filter-item">
+            <q-select
+              dense
+              outlined
+              v-model="filtroSkill"
+              :options="skillOptions"
+              emit-value
+              map-options
+              class="filter-control"
+              popup-content-class="filter-menu"
+            />
+          </div>
         </div>
+      </div>
 
+      <!-- BLOQUE DERECHO: FILTRAR + EXPORTAR -->
+      <div class="filters-actions row items-center q-gutter-sm">
         <!-- Botón Filtrar -->
-        <div class="col-auto">
-          <q-btn outline color="grey-6" class="filter-btn" no-caps>
-            <div class="row items-center no-wrap">
-              <img :src="filtrarIcon" alt="Filtrar" class="btn-filter-icon" />
-              <span class="filter-label">Filtrar</span>
-            </div>
-          </q-btn>
-        </div>
+        <q-btn outline color="grey-6" class="filter-btn" no-caps>
+          <div class="row items-center no-wrap">
+            <img :src="filtrarIcon" alt="Filtrar" class="btn-filter-icon" />
+            <span class="filter-label">Filtrar</span>
+          </div>
+        </q-btn>
 
-        <!-- Botón Exportar (Exportar + Resumen) -->
-        <div class="col-auto">
-          <q-btn unelevated color="primary" no-caps class="export-btn">
-            <div class="column items-center">
-              <div class="row items-center no-wrap">
-                <img :src="descargasIcon" alt="Exportar" class="btn-export-icon" />
-                <span class="export-label">Exportar</span>
-              </div>
-              <div class="export-subtitle">Resumen</div>
-            </div>
-          </q-btn>
-        </div>
+        <!-- Botón Exportar (solo “Exportar”) -->
+        <q-btn unelevated color="primary" no-caps class="export-btn">
+          <div class="row items-center no-wrap">
+            <img :src="descargasIcon" alt="Exportar" class="btn-export-icon" />
+            <span class="export-label">Exportar</span>
+          </div>
+        </q-btn>
       </div>
     </div>
 
@@ -350,7 +351,11 @@ const skillsCriticosCubiertos = computed(() => 0)
   min-height: auto;
 }
 
-/* Títulos */
+/* Bloque título */
+.header-block {
+  margin-bottom: 20px;
+}
+
 .page-title {
   font-family:
     'Inter',
@@ -376,7 +381,21 @@ const skillsCriticosCubiertos = computed(() => 0)
   color: #6b7280;
 }
 
-/* Controles de filtro */
+/* ===== BARRA DE FILTROS ===== */
+.filters-row {
+  margin-bottom: 26px;
+  flex-wrap: wrap;
+}
+
+.filters-main {
+  flex-wrap: wrap;
+}
+
+/* Cada control tiene mismo ancho para que se vea alineado al Figma */
+.filter-item {
+  width: 260px;
+}
+
 .filter-control {
   width: 100%;
 }
@@ -385,10 +404,28 @@ const skillsCriticosCubiertos = computed(() => 0)
   font-size: 14px;
 }
 
+.filters-actions {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
+@media (min-width: 1200px) {
+  .filters-row {
+    flex-wrap: nowrap;
+  }
+  .filters-main {
+    flex-wrap: nowrap;
+  }
+  .filters-actions {
+    margin-top: 0;
+    margin-left: 16px;
+  }
+}
+
 .filter-btn {
   height: 40px;
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 0 16px;
   display: inline-flex;
   align-items: center;
 }
@@ -406,9 +443,12 @@ const skillsCriticosCubiertos = computed(() => 0)
 
 /* Botón exportar top */
 .export-btn {
-  height: 44px;
+  height: 40px;
   border-radius: 10px;
-  padding: 0 18px;
+  padding: 0 26px;
+  min-width: 170px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .btn-export-icon {
@@ -421,13 +461,6 @@ const skillsCriticosCubiertos = computed(() => 0)
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
-}
-
-.export-subtitle {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.1;
-  margin-top: 2px;
 }
 
 /* KPI cards */
@@ -585,7 +618,7 @@ const skillsCriticosCubiertos = computed(() => 0)
   text-transform: none;
 }
 
-/* Responsivo */
+/* Responsivo botones internos */
 @media (max-width: 1024px) {
   .action-buttons {
     width: 100%;
@@ -596,20 +629,6 @@ const skillsCriticosCubiertos = computed(() => 0)
     width: 100%;
     justify-content: center;
     text-align: center;
-  }
-}
-
-@media (max-width: 768px) {
-  .export-btn {
-    width: 100%;
-    justify-content: center;
-    margin-top: 8px;
-  }
-
-  .filter-btn {
-    width: 100%;
-    justify-content: center;
-    margin-top: 8px;
   }
 }
 </style>

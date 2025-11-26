@@ -1,9 +1,17 @@
 const routes = [
+  // Ruta inicial: Login
   {
     path: '/',
+    name: 'login',
+    component: () => import('src/components/auth/LoginForm.vue'),
+  },
+
+  // Ruta para la app principal con MainLayout
+  {
+    path: '/app',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      // redirige / -> /vista-general
+      // redirige /app -> /app/vista-general
       {
         path: '',
         redirect: '/vista-general',

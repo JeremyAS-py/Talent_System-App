@@ -14,7 +14,7 @@ const routes = [
       // redirige /app -> /app/vista-general
       {
         path: '',
-        redirect: '/app/vista-general',
+        redirect: '/vista-general',
       },
 
       // Vista General (IndexPage)
@@ -36,7 +36,7 @@ const routes = [
       {
         path: 'demanda-talento',
         name: 'demanda-talento',
-        component: () => import('pages/IndexPage.vue'),
+        component: () => import('pages/DemandaTalentoPage.vue'),
         // TODO: cambia a pages/DemandaTalentoPage.vue
       },
 

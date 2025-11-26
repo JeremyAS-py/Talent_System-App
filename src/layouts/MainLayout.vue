@@ -1,5 +1,81 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-page">
+    <!-- DRAWER LATERAL -->
+    <q-drawer
+      v-model="leftDrawerOpen"
+      side="left"
+      overlay
+      behavior="mobile"
+      :width="260"
+      class="main-drawer bg-primary text-white"
+    >
+      <div class="drawer-content">
+        <!-- Logo / espacio superior -->
+        <div class="drawer-header q-px-lg q-pt-md q-pb-lg">
+          <div class="drawer-title">
+            <span class="drawer-app-name">Sistema de Gestión</span>
+          </div>
+        </div>
+
+        <!-- OPCIONES PRINCIPALES -->
+        <q-list padding class="drawer-list">
+          <!-- INICIO (lleva a Vista General) -->
+          <q-item
+            clickable
+            v-ripple
+            class="drawer-item"
+            @click="goHome"
+          >
+            <q-item-section avatar>
+              <img :src="inicioIcon" alt="Inicio" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Inicio</q-item-section>
+          </q-item>
+
+          <!-- CARGA MASIVA -->
+          <q-item
+            clickable
+            v-ripple
+            class="drawer-item"
+            @click="goCargaMasiva"
+          >
+            <q-item-section avatar>
+              <img :src="cargaIcon" alt="Carga masiva" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Carga Masiva</q-item-section>
+          </q-item>
+
+          <!-- EXPORTAR -->
+          <q-item
+            clickable
+            v-ripple
+            class="drawer-item"
+            @click="goExportar"
+          >
+            <q-item-section avatar>
+              <q-icon name="download" size="22px" class="drawer-icon-icon" />
+            </q-item-section>
+            <q-item-section>Exportar</q-item-section>
+          </q-item>
+        </q-list>
+
+        <!-- CERRAR SESIÓN ABAJO -->
+        <div class="drawer-footer q-px-lg q-pb-lg q-pt-md">
+          <q-item
+            clickable
+            v-ripple
+            class="drawer-item drawer-item-logout"
+            @click="logout"
+          >
+            <q-item-section avatar>
+              <img :src="cerrarIcon" alt="Cerrar sesión" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Cerrar Sesión</q-item-section>
+          </q-item>
+        </div>
+      </div>
+    </q-drawer>
+
     <!-- HEADER -->
     <q-header elevated class="bg-primary text-white">
       <div class="header-content">
@@ -12,6 +88,7 @@
             icon="menu"
             class="menu-btn"
             size="md"
+            @click="toggleDrawer"
           />
 
           <div class="title-section">
@@ -139,8 +216,18 @@
 import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
+import inicioIcon from 'assets/dashboard/home.png'
+import cargaIcon from 'assets/dashboard/carga-de-archivos.png'
+import cerrarIcon from 'assets/dashboard/cerrar-sesion.png'
+
 const router = useRouter()
 const route = useRoute()
+
+// Drawer lateral
+const leftDrawerOpen = ref(false)
+const toggleDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
 
 // Mapa tab -> ruta (coincide con routes.js)
 const tabRouteMap = {
@@ -169,6 +256,31 @@ const user = {
 
 function navigate (path) {
   router.push(path)
+}
+
+// Acciones del drawer
+function goHome () {
+  navigate('/vista-general')
+  leftDrawerOpen.value = false
+}
+
+function goCargaMasiva () {
+  // ajusta la ruta a la que tengas creada
+  navigate('/carga-masiva')
+  leftDrawerOpen.value = false
+}
+
+function goExportar () {
+  // aquí podrías llevar a una pantalla de reportes / export
+  navigate('/exportar')
+  leftDrawerOpen.value = false
+}
+
+function logout () {
+  // aquí puedes limpiar token/localStorage si ya lo tienes
+  // localStorage.removeItem('token')
+  navigate('/login')
+  leftDrawerOpen.value = false
 }
 
 // Cuando haces click en una tab
@@ -201,6 +313,60 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 
 .bg-page {
   background: $bg-page;
+}
+
+/* ===== DRAWER LATERAL ===== */
+.main-drawer {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.drawer-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.drawer-title {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.drawer-list {
+  flex: 1;
+}
+
+.drawer-item {
+  border-radius: 0;
+  padding: 12px 20px;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  font-size: 15px;
+  color: $text-white;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.12);
+  }
+}
+
+.drawer-item-logout {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin-top: 8px;
+}
+
+.drawer-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.drawer-icon-icon {
+  color: $text-white;
 }
 
 /* HEADER */

@@ -7,28 +7,7 @@ import axios from 'axios'
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
-// Use relative baseURL so dev-server proxy `/api` works and no CORS from frontend.
-// Setting baseURL to '/api' makes calls simpler: `api.get('/Colaborador')`.
-const api = axios.create({ baseURL: '/api' })
-
-// read token from localStorage (set by your login flow) and attach to default headers
-function setAuthToken(token) {
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-  } else {
-    delete api.defaults.headers.common['Authorization']
-    delete axios.defaults.headers.common['Authorization']
-  }
-}
-
-// initialize from storage if present
-try {
-  const stored = localStorage.getItem('authToken')
-  if (stored) setAuthToken(stored)
-} catch {
-  // ignore (e.g., SSR or no localStorage)
-}
+const api = axios.create({ baseURL: 'http://localhost:5066' })
 
 export default defineBoot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

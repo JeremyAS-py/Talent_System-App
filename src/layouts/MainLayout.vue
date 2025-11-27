@@ -155,8 +155,17 @@ function navigate(path) {
 
 function changeTab(tabName) {
   tab.value = tabName
-  // aquí luego puedes hacer router.push según el tab si quieres
+  const path = tabRouteMap[tabName]
+  if (path) router.push(path)
 }
+
+// Si navegas por otros lados, mantenemos el tab sincronizado
+watch(
+  () => route.path,
+  (newPath) => {
+    tab.value = getTabFromPath(newPath)
+  },
+)
 </script>
 
 <style lang="scss" scoped>
@@ -173,6 +182,69 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 
 .bg-page {
   background: $bg-page;
+}
+
+/* ===== DRAWER LATERAL ===== */
+.main-drawer {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.drawer-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.drawer-title {
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.drawer-list {
+  flex: 1;
+}
+
+.drawer-item {
+  border-radius: 0;
+  padding: 12px 20px;
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 15px;
+  color: $text-white;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.12);
+  }
+}
+
+.drawer-item-logout {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin-top: 8px;
+}
+
+.drawer-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.drawer-icon-icon {
+  color: $text-white;
 }
 
 /* HEADER */
@@ -237,7 +309,7 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 .right-section {
   display: flex;
   align-items: center;
-  gap: 10px; /* menos espacio entre + y usuario */
+  gap: 10px;
 }
 
 .add-btn {

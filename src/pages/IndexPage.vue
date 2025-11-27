@@ -1,309 +1,309 @@
 <template>
-  <q-page class="bg-page q-pa-lg">
+  <q-page class="bg-page q-pa-lg page-auto">
 
-    <!-- TÍTULO -->
-    <div class="row items-center q-mb-md">
-      <div>
-        <h4 class="page-title q-my-none">Vista General</h4>
-        <div class="page-subtitle">
-          Resumen de movilidad interna, demanda de talento y brechas de skill
-        </div>
+    <!-- TITULO + DESCRIPCIÓN -->
+    <div class="q-mb-xl">
+      <div class="page-title">Vista General</div>
+      <div class="page-subtitle">
+        Resumen de movilidad interna, demanda de talento y brechas de skill.
       </div>
     </div>
 
-    <!-- KPIs SUPERIORES -->
+    <!-- =================== CARDS SUPERIORES =================== -->
     <div class="row q-col-gutter-md q-mb-xl">
-
       <div
-        v-for="card in kpiCards"
-        :key="card.key"
-        class="col-12 col-sm-6 col-md-3"
+        v-for="card in summaryCards"
+        :key="card.id"
+        class="col-12 col-sm-6 col-lg-3"
       >
-        <q-card class="kpi-card shadow-1">
-          <q-card-section class="row no-wrap items-center">
-            <q-avatar rounded size="42px" class="kpi-icon" :color="card.iconBg">
-              <q-icon :name="card.icon" size="24px" />
-            </q-avatar>
+        <q-card class="summary-card q-pa-lg">
+          <div class="row items-start no-wrap">
+            <div class="summary-icon">
+              <img :src="card.icon" :alt="card.title" />
+            </div>
 
-            <div class="kpi-content">
-              <div class="kpi-label">{{ card.label }}</div>
-              <div class="kpi-value">
-                {{ card.value }}
-                <span v-if="card.suffix" class="kpi-suffix">
-                  {{ card.suffix }}
+            <div class="q-ml-md" style="flex: 1;">
+              <div class="summary-label">{{ card.title }}</div>
+              <div class="summary-value">{{ card.value }}</div>
+
+              <!-- helper + trend -->
+              <div class="summary-footer">
+                <span class="summary-helper">
+                  {{ card.helper }}
                 </span>
-              </div>
-              <div class="kpi-footer">
-                <span class="kpi-helper">{{ card.helper }}</span>
                 <span
-                  v-if="card.trend"
-                  class="kpi-trend"
-                  :class="card.trend.startsWith('-') ? 'negative' : 'positive'"
+                  class="summary-trend"
+                  :class="card.trendPositive ? 'trend-positive' : 'trend-negative'"
                 >
                   {{ card.trend }}
                 </span>
               </div>
             </div>
-          </q-card-section>
+          </div>
         </q-card>
       </div>
-
     </div>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <div class="row q-col-gutter-xl">
+    <!-- =================== BLOQUE CENTRAL =================== -->
+    <div class="row q-col-gutter-md">
 
-      <!-- SKILL MAPPING POR COLABORADOR -->
-      <div class="col-12 col-lg-7">
-        <q-card class="shadow-1 rounded-borders">
+      <!-- Skill Mapping -->
+      <div class="col-12 col-lg-7 col-xl-8">
+        <q-card class="panel-card q-pa-lg">
 
-          <q-card-section class="row items-center justify-between q-pb-sm">
+          <!-- Header tabla -->
+          <div class="row justify-between items-start q-mb-lg">
             <div>
-              <div class="card-title">
-                Skill Mapping por Colaborador
-              </div>
-              <div class="card-subtitle">
+              <div class="panel-title">Skill Mapping por Colaborador</div>
+              <div class="panel-subtitle">
                 Mapa de skills y movilidad por área / departamento
               </div>
             </div>
 
-            <div class="controls row items-center q-gutter-sm">
+            <div class="row items-center q-gutter-sm">
               <q-select
                 dense
                 outlined
-                v-model="selectedDept"
-                :options="departmentOptions"
-                option-label="label"
+                v-model="filtroDepartamento"
+                :options="departamentoOptions"
                 emit-value
                 map-options
-                style="min-width: 210px"
-              />
-            </div>
-          </q-card-section>
+                style="min-width: 200px;"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="folder" size="18px" />
+                </template>
+              </q-select>
 
+              <!-- Botón Filtrar alineado con el select -->
+              <q-btn
+                outline
+                color="grey-6"
+                class="filter-btn"
+                no-caps
+              >
+                <div class="row items-center no-wrap">
+                  <img
+                    :src="filtrarIcon"
+                    alt="Filtrar"
+                    class="btn-filter-icon"
+                  />
+                  <span class="filter-label">Filtrar</span>
+                </div>
+              </q-btn>
+            </div>
+          </div>
+
+          <!-- Encabezados -->
+          <div class="row table-header q-py-md q-px-sm">
+            <div class="col-3">Colaborador</div>
+            <div class="col-2">Rol</div>
+            <div class="col-3">Skills clave</div>
+            <div class="col-2">Cobertura</div>
+            <div class="col-1 text-center">Movilidad</div>
+            <div class="col-1 text-center">Acciones</div>
+          </div>
           <q-separator />
 
-          <q-card-section class="q-pt-none q-pl-none q-pr-none">
-            <q-table
-              :rows="filteredEmployees"
-              :columns="employeeColumns"
-              row-key="id"
-              flat
-              dense
-              hide-bottom
-              separator="horizontal"
-              class="mapping-table"
-            >
-              <template #body-cell-name="props">
-                <q-td :props="props">
-                  <div class="emp-name">{{ props.row.name }}</div>
-                  <div class="emp-meta">
-                    {{ props.row.role }} · {{ props.row.department }}
-                  </div>
-                </q-td>
-              </template>
+          <!-- Filas -->
+          <div
+            v-for="colab in colaboradoresFiltrados"
+            :key="colab.id"
+            class="row table-row items-center q-py-md q-px-sm"
+          >
+            <!-- Nombre + Área -->
+            <div class="col-3">
+              <div class="text-body2 text-weight-bold name-text">
+                {{ colab.nombre }}
+              </div>
+              <div class="text-caption area-text">
+                {{ colab.area }}
+              </div>
+            </div>
 
-              <template #body-cell-skills="props">
-                <q-td :props="props">
-                  <div class="row items-center q-col-gutter-xs">
-                    <q-chip
-                      v-for="skill in props.row.keySkills"
-                      :key="skill"
-                      size="sm"
-                      color="primary"
-                      text-color="white"
-                      class="q-mr-xs q-mb-xs"
-                    >
-                      {{ skill }}
-                    </q-chip>
-                  </div>
-                </q-td>
-              </template>
+            <!-- Rol -->
+            <div class="col-2 rol-text">
+              {{ colab.rol }}
+            </div>
 
-              <template #body-cell-mapped="props">
-                <q-td :props="props">
-                  <div class="row items-center no-wrap">
-                    <div class="mapping-label">
-                      {{ props.row.mappedPercent }}%
-                    </div>
-                    <q-linear-progress
-                      :value="props.row.mappedPercent / 100"
-                      rounded
-                      size="6px"
-                      color="primary"
-                      class="mapping-bar"
-                    />
-                  </div>
-                  <div class="mapping-sub">
-                    {{ props.row.skillsMapped }} skills mapeados
-                  </div>
-                </q-td>
-              </template>
+            <!-- Skills clave -->
+            <div class="col-3 skills-cell">
+              <q-chip
+                v-for="skill in colab.skills"
+                :key="skill"
+                dense
+                color="primary"
+                text-color="white"
+                class="skill-chip"
+              >
+                {{ skill }}
+              </q-chip>
+            </div>
 
-              <template #body-cell-mobility="props">
-                <q-td :props="props">
-                  <q-chip
-                    :color="props.row.mobility === 'Alta' ? 'positive' : 'warning'"
-                    text-color="white"
-                    size="sm"
-                  >
-                    Movilidad {{ props.row.mobility }}
-                  </q-chip>
-                </q-td>
-              </template>
+            <!-- Cobertura + barra -->
+            <div class="col-2">
+              <div class="cobertura-text">{{ colab.cobertura }}%</div>
+              <q-linear-progress
+                :value="colab.cobertura / 100"
+                color="primary"
+                track-color="grey-3"
+                size="7px"
+                rounded
+              />
+              <div class="text-caption skills-count">
+                {{ colab.totalSkills }} skills
+              </div>
+            </div>
 
-              <template #body-cell-actions="props">
-                <q-td :props="props">
-                  <q-btn
-                    flat
-                    size="sm"
-                    color="primary"
-                    label="Ver perfil"
-                    icon="open_in_new"
-                    class="text-no-wrap"
-                  />
-                </q-td>
-              </template>
-            </q-table>
-          </q-card-section>
+            <!-- Movilidad -->
+            <div class="col-1 flex flex-center">
+              <q-chip
+                dense
+                square
+                :color="colab.movilidad ? 'positive' : 'grey-4'"
+                :text-color="colab.movilidad ? 'white' : 'grey-8'"
+                class="movilidad-chip"
+              >
+                {{ colab.movilidad ? 'SI' : 'NO' }}
+              </q-chip>
+            </div>
 
-          <q-card-actions align="right" class="q-pa-md">
-            <q-btn flat color="primary" label="Ver más colaboradores" />
-          </q-card-actions>
+            <!-- Botón Ver Perfil -->
+            <div class="col-1 flex flex-center">
+              <q-btn
+                flat
+                color="primary"
+                dense
+                style="font-size: 12px;"
+                label="Ver perfil"
+              />
+            </div>
+          </div>
+
+          <!-- Botón Ver más -->
+          <div class="row justify-center q-mt-lg">
+            <q-btn
+              unelevated
+              color="primary"
+              label="Ver Más"
+              class="q-px-xl"
+              style="text-transform: none; font-weight: 600;"
+            />
+          </div>
+
         </q-card>
       </div>
 
-      <!-- COLUMNA DERECHA: DEMANDA + GAPS -->
-      <div class="col-12 col-lg-5">
-
-        <!-- DEMANDA DE TALENTO -->
-        <q-card class="shadow-1 rounded-borders q-mb-lg">
-          <q-card-section class="row items-center justify-between q-pb-xs">
-            <div>
-              <div class="card-title">Demanda de talento</div>
-              <div class="card-subtitle">
-                Vacantes internas activas por área y urgencia
+      <!-- Derecha: Demanda + Gaps -->
+      <div class="col-12 col-lg-5 col-xl-4">
+        <!-- Demanda -->
+        <q-card class="panel-card compact-card q-mb-md">
+          <q-card-section class="q-pb-md">
+            <div class="row justify-between items-center">
+              <div class="panel-title row items-center">
+                <q-icon name="work_outline" class="q-mr-xs" size="20px" />
+                Demanda de talento
               </div>
+              <q-badge color="primary" outline>
+                {{ demandas.length }} vacantes
+              </q-badge>
             </div>
-            <q-badge
-              color="primary"
-              transparent
-              align="middle"
-            >
-              {{ openPositions.length }} vacantes
-            </q-badge>
-          </q-card-section>
-
-          <q-separator />
-
-          <q-card-section class="q-gutter-md q-pt-md">
-            <q-card
-              v-for="vac in openPositions"
-              :key="vac.id"
-              flat
-              bordered
-              class="vacancy-card"
-            >
-              <q-card-section class="row items-start justify-between q-pb-sm">
-                <div>
-                  <div class="vacancy-role">
-                    {{ vac.role }}
-                  </div>
-                  <div class="vacancy-meta">
-                    {{ vac.area }} · {{ vac.department }}
-                  </div>
-                </div>
-
-                <q-chip
-                  dense
-                  :color="getUrgencyColor(vac.urgency)"
-                  text-color="white"
-                  class="text-uppercase"
-                >
-                  {{ vac.urgency }}
-                </q-chip>
-              </q-card-section>
-
-              <q-card-section class="q-pt-none">
-                <div class="row items-center q-mb-xs">
-                  <span class="vacancy-label">Proyecto:</span>
-                  <span class="vacancy-value">{{ vac.project }}</span>
-                </div>
-                <div class="row items-center q-mb-xs">
-                  <span class="vacancy-label">Inicio:</span>
-                  <span class="vacancy-value">{{ vac.startDate }}</span>
-                </div>
-                <div class="row items-center">
-                  <span class="vacancy-label">Skills clave:</span>
-                  <span class="vacancy-value">
-                    {{ vac.keySkills.join(', ') }}
-                  </span>
-                </div>
-              </q-card-section>
-
-              <q-card-actions align="right" class="q-pt-none q-pb-sm">
-                <q-btn flat size="sm" color="primary" label="Ver detalle" />
-              </q-card-actions>
-            </q-card>
-          </q-card-section>
-
-          <q-card-actions align="center" class="q-pt-none q-pb-md">
-            <q-btn flat color="primary" label="Ver todas las vacantes" />
-          </q-card-actions>
-        </q-card>
-
-        <!-- SKILL GAPS CRÍTICOS -->
-        <q-card class="shadow-1 rounded-borders">
-          <q-card-section class="row items-center justify-between q-pb-xs">
-            <div>
-              <div class="card-title">Skill gaps críticos</div>
-              <div class="card-subtitle">
-                Skills donde la demanda supera la oferta interna
-              </div>
+            <div class="panel-subtitle">
+              Vacantes internas activas por área y urgencia
             </div>
-            <q-icon name="warning_amber" color="negative" />
           </q-card-section>
 
-          <q-separator />
+          <q-separator class="q-mb-md" />
 
-          <q-card-section class="q-pt-md">
+          <q-card-section>
             <div
-              v-for="gap in criticalGaps"
-              :key="gap.skill"
-              class="q-mb-md"
+              v-for="vac in demandas"
+              :key="vac.id"
+              class="vacancy-item q-pa-md q-mb-md"
             >
-              <div class="row items-center justify-between q-mb-xs">
-                <div class="gap-skill">{{ gap.skill }}</div>
-                <q-badge
-                  outline
-                  :color="gap.delta < 0 ? 'negative' : 'primary'"
-                  class="gap-badge"
-                >
-                  {{ gap.delta < 0 ? gap.delta : '+' + gap.delta }}
+              <div class="row justify-between items-center q-mb-sm">
+                <div class="vac-puesto">{{ vac.puesto }}</div>
+                <q-badge :color="vac.urgenciaColor" outline>
+                  {{ vac.urgencia }}
                 </q-badge>
               </div>
 
-              <div class="row items-center">
-                <span class="gap-label">Disponible:</span>
-                <span class="gap-value">{{ gap.available }}</span>
-                <q-space />
-                <span class="gap-label">Requerido:</span>
-                <span class="gap-value">{{ gap.required }}</span>
+              <div class="vac-area">{{ vac.area }}</div>
+              <div class="vac-desc">
+                <strong>Proyecto:</strong> {{ vac.proyecto }}
+              </div>
+              <div class="vac-desc">
+                <strong>Inicio:</strong> {{ vac.inicio }}
+              </div>
+              <div class="vac-desc">
+                <strong>Skills clave:</strong> {{ vac.skills }}
               </div>
 
-              <q-linear-progress
-                :value="gap.available / gap.required"
-                size="6px"
-                rounded
-                color="negative"
-                track-color="grey-3"
-                class="q-mt-xs"
-              />
+              <div class="row justify-between items-center q-mt-sm">
+                <div class="candidatos-text">
+                  {{ vac.candidatos }} candidatos
+                </div>
+                <q-btn flat dense color="primary" label="Ver detalle" />
+              </div>
             </div>
           </q-card-section>
 
-          <q-card-actions align="center" class="q-pt-none q-pb-md">
-            <q-btn flat color="primary" label="Ver brechas de skill" />
+          <q-card-actions align="right">
+            <q-btn
+              unelevated
+              color="primary"
+              label="Ver Más"
+              class="btn-primary-link"
+            />
+          </q-card-actions>
+        </q-card>
+
+        <!-- Gaps -->
+        <q-card class="panel-card compact-card">
+          <q-card-section class="q-pb-md">
+            <div class="panel-title row items-center">
+              <q-icon name="warning_amber" class="q-mr-xs" size="20px" />
+              Skill Gaps Críticos
+            </div>
+            <div class="panel-subtitle">
+              Skills con mayor brecha entre oferta y demanda
+            </div>
+          </q-card-section>
+
+          <q-separator class="q-mb-md" />
+
+          <q-card-section>
+            <div
+              v-for="gap in skillGaps"
+              :key="gap.id"
+              class="q-mb-md"
+            >
+              <div class="row justify-between items-center q-mb-sm">
+                <div class="gap-skill">{{ gap.skill }}</div>
+                <span class="gap-num">-{{ gap.brecha }}</span>
+              </div>
+
+              <q-linear-progress
+                :value="gap.porcentaje / 100"
+                color="negative"
+                track-color="grey-3"
+                size="8px"
+                rounded
+              />
+
+              <div class="gap-detalle">
+                Disponible: {{ gap.disponible }} · Requerido: {{ gap.requerido }}
+              </div>
+            </div>
+          </q-card-section>
+
+          <q-card-actions align="right">
+            <q-btn
+              unelevated
+              color="primary"
+              label="Ver Brechas de Skills"
+              class="btn-primary-link"
+            />
           </q-card-actions>
         </q-card>
 
@@ -316,335 +316,416 @@
 <script setup>
 import { computed, ref } from 'vue'
 
-/**
- * KPIs superiores – en producción vendrían de la base de datos
- * (conteo de colaboradores activos, vacantes, etc.)
- */
-const kpiCards = [
+// ICONOS
+import personasIcon from 'assets/dashboard/personas.png'
+import vacanteIcon from 'assets/dashboard/vacante.png'
+import tendenciaIcon from 'assets/dashboard/tendencia.png'
+import busquedaIcon from 'assets/dashboard/busqueda.png'
+import filtrarIcon from 'assets/dashboard/filtrar.png'
+
+/* ====== CARDS ====== */
+const summaryCards = [
   {
-    key: 'collaborators',
-    label: 'Colaboradores activos',
-    value: 100,
-    suffix: '',
+    id: 'colaboradores',
+    title: 'Colaboradores activos',
+    value: '100',
     helper: 'Skills totales mapeados: 1,482',
     trend: '+12%',
-    icon: 'group',
-    iconBg: 'blue-1'
+    trendPositive: true,
+    icon: personasIcon
   },
   {
-    key: 'vacancies',
-    label: 'Vacantes cubiertas internamente',
+    id: 'vacantes',
+    title: 'Vacantes cubiertas internamente',
     value: '10/30',
     helper: 'Último trimestre',
     trend: '+8%',
-    icon: 'work',
-    iconBg: 'blue-1'
+    trendPositive: true,
+    icon: vacanteIcon
   },
   {
-    key: 'coverage',
-    label: 'Cobertura de skills críticos',
-    value: '80',
-    suffix: '%',
+    id: 'cobertura',
+    title: 'Cobertura de skills críticos',
+    value: '80%',
     helper: 'Top 50 skills estratégicos',
     trend: '+5%',
-    icon: 'trending_up',
-    iconBg: 'blue-1'
+    trendPositive: true,
+    icon: tendenciaIcon
   },
   {
-    key: 'gaps',
-    label: 'Skill gaps críticos',
-    value: 12,
+    id: 'gaps',
+    title: 'Skill gaps críticos',
+    value: '12',
     helper: 'Requieren atención inmediata',
     trend: '-7%',
-    icon: 'warning_amber',
-    iconBg: 'red-1'
+    trendPositive: false,
+    icon: busquedaIcon
   }
 ]
 
-/**
- * Data mock para empleados – puedes mapear esto 1:1 a tu esquema:
- * Colaborador, Departamento, Área, Rol, Skills, etc.
- */
-const employees = [
+/* ====== COLABORADORES ====== */
+const colaboradores = ref([
   {
     id: 1,
-    name: 'Juan Pérez',
-    role: 'Backend Developer Sr',
-    department: 'Tecnología',
-    keySkills: ['Node.js', 'SQL', 'Microservicios'],
-    mappedPercent: 95,
-    skillsMapped: 18,
-    mobility: 'Alta'
+    nombre: 'Juan Pérez',
+    area: 'Marketing · IT',
+    rol: 'PROJECT MANAGER',
+    skills: ['Liderazgo', 'Agile', 'Comunicación'],
+    cobertura: 95,
+    totalSkills: 18,
+    movilidad: true,
+    departamento: 'Todos los departamentos'
   },
   {
     id: 2,
-    name: 'Luis Chang',
-    role: 'Frontend Developer',
-    department: 'Tecnología',
-    keySkills: ['Frontend Vue', 'UX', 'Comunicación'],
-    mappedPercent: 88,
-    skillsMapped: 15,
-    mobility: 'Media'
+    nombre: 'Luis Chang',
+    area: 'IT · Tecnología',
+    rol: 'FULL STACK',
+    skills: ['Node.js', 'UI Design', 'SQL'],
+    cobertura: 88,
+    totalSkills: 15,
+    movilidad: true,
+    departamento: 'Tecnología'
   },
   {
     id: 3,
-    name: 'María Torres',
-    role: 'Data Engineer',
-    department: 'Tecnología',
-    keySkills: ['SQL', 'AWS', 'Python'],
-    mappedPercent: 92,
-    skillsMapped: 17,
-    mobility: 'Alta'
+    nombre: 'José Ballón',
+    area: 'IT · Ciencia de Datos',
+    rol: 'DATA SCIENTIST',
+    skills: ['Python', 'SQL', 'Machine Learning'],
+    cobertura: 92,
+    totalSkills: 17,
+    movilidad: true,
+    departamento: 'Tecnología'
   },
   {
     id: 4,
-    name: 'Ana Rojas',
-    role: 'HR Business Partner',
-    department: 'Recursos Humanos',
-    keySkills: ['Comunicación', 'Trabajo en equipo'],
-    mappedPercent: 80,
-    skillsMapped: 12,
-    mobility: 'Media'
+    nombre: 'Ana Rojas',
+    area: 'HR Business Partner',
+    rol: 'HR BUSINESS PARTNER',
+    skills: ['Comunicación', 'Trabajo en equipo'],
+    cobertura: 80,
+    totalSkills: 12,
+    movilidad: false,
+    departamento: 'Recursos Humanos'
   }
-]
+])
 
-const employeeColumns = [
-  { name: 'name', label: 'Colaborador', field: 'name', align: 'left' },
-  { name: 'skills', label: 'Skills clave', field: 'keySkills', align: 'left' },
-  { name: 'mapped', label: 'Cobertura de skills', field: 'mappedPercent', align: 'left' },
-  { name: 'mobility', label: 'Movilidad', field: 'mobility', align: 'left' },
-  { name: 'actions', label: '', field: 'id', align: 'right' }
-]
-
-// Filtro por departamento
-const departmentOptions = [
-  { label: 'Todos los departamentos', value: 'ALL' },
+const departamentoOptions = [
+  { label: 'Todos los departamentos', value: 'Todos los departamentos' },
   { label: 'Tecnología', value: 'Tecnología' },
   { label: 'Recursos Humanos', value: 'Recursos Humanos' }
 ]
-const selectedDept = ref('ALL')
 
-const filteredEmployees = computed(() => {
-  if (selectedDept.value === 'ALL') return employees
-  return employees.filter(e => e.department === selectedDept.value)
+const filtroDepartamento = ref('Todos los departamentos')
+
+const colaboradoresFiltrados = computed(() => {
+  if (filtroDepartamento.value === 'Todos los departamentos') {
+    return colaboradores.value
+  }
+  return colaboradores.value.filter(
+    c => c.departamento === filtroDepartamento.value
+  )
 })
 
-/**
- * Vacantes abiertas – mapeado a tus tablas Vacante / Proyecto / Urgencia.
- */
-const openPositions = [
+/* ====== DEMANDA ====== */
+const demandas = [
   {
     id: 1,
-    role: 'Senior Engineer Backend',
-    area: 'Desarrollo Backend',
-    department: 'Tecnología',
-    urgency: 'ALTA',
-    project: 'Proyecto DataHub',
-    startDate: '01/04/2025',
-    keySkills: ['Node.js', 'Microservicios', 'SQL']
+    puesto: 'Senior Engineer Backend',
+    area: 'Desarrollo Backend · Tecnología',
+    urgencia: 'ALTA',
+    urgenciaColor: 'negative',
+    proyecto: 'Proyecto DataHub',
+    inicio: '01/04/2025',
+    skills: 'Node.js, Microservicios, SQL',
+    candidatos: 1
   },
   {
     id: 2,
-    role: 'Data Scientist',
-    area: 'Data & Analytics',
-    department: 'Tecnología',
-    urgency: 'MEDIA',
-    project: 'Proyecto CRM360',
-    startDate: '15/04/2025',
-    keySkills: ['Python', 'ML', 'SQL']
+    puesto: 'Data Scientist',
+    area: 'Data & Analytics · Tecnología',
+    urgencia: 'MEDIA',
+    urgenciaColor: 'warning',
+    proyecto: 'Proyecto Retail Analytics',
+    inicio: '15/05/2025',
+    skills: 'Python, ML, Cloud',
+    candidatos: 2
   }
 ]
 
-/**
- * Skill gaps – esto se puede construir con un query
- * que compare demanda (Vacantes+Perfiles) vs oferta interna (Skills por colaborador).
- */
-const criticalGaps = [
-  { skill: 'Python', available: 4, required: 10, delta: -6 },
-  { skill: 'Frontend Vue', available: 3, required: 8, delta: -5 },
-  { skill: 'Microservicios', available: 2, required: 7, delta: -5 }
+/* ====== GAPS ====== */
+const skillGaps = [
+  {
+    id: 1,
+    skill: 'Python',
+    disponible: 45,
+    requerido: 60,
+    brecha: 15,
+    porcentaje: 75
+  },
+  {
+    id: 2,
+    skill: 'R',
+    disponible: 12,
+    requerido: 25,
+    brecha: 13,
+    porcentaje: 48
+  },
+  {
+    id: 3,
+    skill: 'Machine Learning',
+    disponible: 45,
+    requerido: 60,
+    brecha: 15,
+    porcentaje: 75
+  }
 ]
-
-function getUrgencyColor (urg) {
-  if (urg === 'ALTA') return 'negative'
-  if (urg === 'MEDIA') return 'warning'
-  return 'primary'
-}
 </script>
 
-<style scoped lang="scss">
-$primary-blue: #2469bc;
-$bg-page: #f4f3f9;
-
-.bg-page {
-  background: $bg-page;
+<style scoped>
+/* Fondo auto + padding inferior */
+.page-auto {
+  min-height: auto !important;
+  padding-bottom: 40px;
 }
 
+/* TIPOGRAFÍA GENERAL */
 .page-title {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 28px;
   font-weight: 700;
-  font-size: 20px;
+  color: #111827;
 }
 
 .page-subtitle {
-  font-family: 'Roboto', -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* CARDS SUPERIORES */
+.summary-card {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.summary-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.summary-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.summary-label {
   font-size: 13px;
   color: #6b7280;
 }
 
-/* KPIs */
-.kpi-card {
-  border-radius: 16px;
-  padding: 12px 14px;
+.summary-value {
+  font-size: 32px;
+  font-weight: 700;
 }
 
-.kpi-icon {
-  background: #e8f2ff;
-  color: $primary-blue;
-}
-
-.kpi-content {
-  margin-left: 12px;
-  flex: 1;
-}
-
-.kpi-label {
+/* Línea helper + trend */
+.summary-footer {
+  margin-top: 6px;
   font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
 }
 
-.kpi-value {
-  font-size: 22px;
+.summary-helper {
+  color: #6b7280;
+  margin-right: 6px;
+}
+
+/* Badge del trend (+12%, -7%) */
+.summary-trend {
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.trend-positive {
+  background-color: #ecfdf3;
+  color: #16a34a;
+}
+
+.trend-negative {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+/* PANEL */
+.panel-card {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: white;
+}
+
+.compact-card {
+  padding: 16px;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.panel-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* TABLA */
+.table-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.table-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s ease;
+}
+
+.table-row:hover {
+  background: #eef2ff;
+}
+
+.name-text {
+  color: #111827;
+}
+
+.area-text {
+  color: #6b7280;
+}
+
+.rol-text {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Skills: más compactos y ordenados */
+.skills-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.skill-chip {
+  font-size: 11px;
+  height: 22px;
+  border-radius: 999px;
+  padding: 0 10px;
+}
+
+.cobertura-text {
   font-weight: 700;
   color: #111827;
-  display: flex;
-  align-items: baseline;
 }
 
-.kpi-suffix {
-  font-size: 14px;
-  margin-left: 2px;
+.skills-count {
+  color: #6b7280;
+  font-size: 11px;
 }
 
-.kpi-footer {
-  display: flex;
-  justify-content: space-between;
+.movilidad-chip {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Botón de Filtrar alineado con el q-select */
+.filter-btn {
+  height: 40px;               /* similar al alto del q-select dense */
+  border-radius: 8px;
+  padding: 0 12px;
+  display: inline-flex;
   align-items: center;
-  margin-top: 4px;
 }
 
-.kpi-helper {
-  font-size: 11px;
-  color: #9ca3af;
+/* Icono del botón Filtrar */
+.btn-filter-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
 }
 
-.kpi-trend {
-  font-size: 11px;
-  font-weight: 600;
-
-  &.positive {
-    color: #059669;
-  }
-
-  &.negative {
-    color: #dc2626;
-  }
-}
-
-/* Card genérica */
-.card-title {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.card-subtitle {
-  font-family: 'Roboto', -apple-system, 'Segoe UI', sans-serif;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-/* Tabla de mapping */
-.mapping-table {
-  font-family: 'Roboto', -apple-system, 'Segoe UI', sans-serif;
-}
-
-.emp-name {
-  font-weight: 500;
+/* Texto del botón Filtrar */
+.filter-label {
   font-size: 14px;
+  color: #374151;             /* gris oscuro, como el texto del select */
 }
 
-.emp-meta {
-  font-size: 11px;
-  color: #6b7280;
+/* VACANTES */
+.vacancy-item {
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  transition: background 0.15s ease;
 }
 
-.mapping-label {
-  font-size: 12px;
-  font-weight: 600;
+.vacancy-item:hover {
+  background: #f9fafb;
+}
+
+.vac-puesto {
+  font-weight: 700;
   color: #111827;
-  margin-right: 8px;
 }
 
-.mapping-bar {
-  flex: 1;
-}
-
-.mapping-sub {
-  font-size: 11px;
-  color: #9ca3af;
-}
-
-/* Vacantes */
-.vacancy-card {
-  border-radius: 12px;
-}
-
-.vacancy-role {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.vacancy-meta {
+.vac-area {
   font-size: 12px;
   color: #6b7280;
+  margin-bottom: 6px;
 }
 
-.vacancy-label {
+.vac-desc {
   font-size: 12px;
-  color: #6b7280;
-  margin-right: 4px;
+  color: #374151;
 }
 
-.vacancy-value {
+.candidatos-text {
   font-size: 12px;
+  color: #2563eb;
 }
 
-/* Skill gaps */
+/* GAPS */
 .gap-skill {
-  font-weight: 500;
-  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
 }
 
-.gap-badge {
-  font-size: 11px;
+.gap-num {
+  font-weight: 700;
+  color: #ef4444;
 }
 
-.gap-label {
+.gap-detalle {
   font-size: 11px;
   color: #6b7280;
-  margin-right: 4px;
 }
 
-.gap-value {
-  font-size: 11px;
-}
-
-/* Responsivo */
-@media (max-width: 768px) {
-  .page-container {
-    padding: 16px;
-  }
+/* Botones inferiores sólidos */
+.btn-primary-link {
+  text-transform: none;
+  font-weight: 600;
 }
 </style>

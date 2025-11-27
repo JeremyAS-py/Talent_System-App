@@ -1,24 +1,27 @@
 <template>
-  <q-layout view="hHh lpR fFf" class="bg-page">
+  <q-layout view="hHh lpR fFf">
+    <!-- Barra lateral -->
+    <MenuSidebar
+      :initialOpen="false"
+      :is-open="sidebarOpen"
+      @toggle="sidebarOpen = $event"
+      @navigate="handleNavigation"
+    />
+
+    <!-- Modal de carga masiva -->
+    <BulkUploadPage :modelValue="showCargaMasiva" @close="showCargaMasiva = false" />
+
     <!-- HEADER -->
     <q-header elevated class="bg-primary text-white">
       <div class="header-content">
         <!-- IZQUIERDA: menú + título -->
         <div class="left-section">
-          <q-btn
-            flat
-            dense
-            round
-            icon="menu"
-            class="menu-btn"
-            size="md"
-          />
+          <!-- BOTÓN HAMBURGUESA -->
+          <q-btn flat dense round icon="menu" class="menu-btn" @click="toggleSidebar" />
 
           <div class="title-section">
             <div class="title-app">Sistema de Gestión de Talento Interno</div>
-            <div class="subtitle-app">
-              Movilidad interna inteligente basada en skills
-            </div>
+            <div class="subtitle-app">Movilidad interna inteligente basada en skills</div>
           </div>
         </div>
 
@@ -27,20 +30,8 @@
         <!-- DERECHA: + menú y usuario -->
         <div class="right-section">
           <!-- BOTÓN + CON MENÚ (activador directo) -->
-          <q-btn
-            round
-            color="white"
-            text-color="primary"
-            icon="add"
-            size="md"
-            class="add-btn"
-          >
-            <q-menu
-              anchor="bottom right"
-              self="top right"
-              class="custom-menu"
-              :offset="[0, 8]"
-            >
+          <q-btn round color="white" text-color="primary" icon="add" size="md" class="add-btn">
+            <q-menu anchor="bottom right" self="top right" class="custom-menu" :offset="[0, 8]">
               <q-list style="min-width: 220px">
                 <q-item
                   clickable
@@ -73,12 +64,7 @@
 
           <!-- USUARIO -->
           <div class="user-section">
-            <q-avatar
-              size="44px"
-              color="white"
-              text-color="primary"
-              class="user-avatar"
-            >
+            <q-avatar size="44px" color="white" text-color="primary" class="user-avatar">
               <q-icon name="person" size="24px" />
             </q-avatar>
 
@@ -138,20 +124,36 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import MenuSidebar from '../components/MenuSidebar.vue'
+import BulkUploadPage from '../pages/BulkUploadPage.vue'
 
 const router = useRouter()
 const tab = ref('demanda') // tab activa por defecto
 
-// En producción esto vendría del login / store
-const user = {
-  name: 'F. Rosales'
+const showCargaMasiva = ref(false)
+
+function handleNavigation(destino) {
+  if (destino === 'bulk-upload') {
+    showCargaMasiva.value = true
+  }
 }
 
-function navigate (path) {
+const sidebarOpen = ref(false)
+
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value
+}
+
+// En producción esto vendría del login / store
+const user = {
+  name: 'F. Rosales',
+}
+
+function navigate(path) {
   router.push(path)
 }
 
-function changeTab (tabName) {
+function changeTab(tabName) {
   tab.value = tabName
   // aquí luego puedes hacer router.push según el tab si quieres
 }
@@ -203,7 +205,12 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .title-app {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 18px;
   font-weight: 700;
@@ -213,7 +220,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .subtitle-app {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 13px;
   font-weight: 400;
@@ -270,7 +281,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .user-name {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-weight: 600;
   font-size: 14px;
@@ -279,7 +294,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .user-role {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 12px;
   font-weight: 400;
@@ -306,7 +325,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
   :deep(.q-tab) {
     padding: 14px 20px;
     min-height: 48px;
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    font-family:
+      'Roboto',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
       sans-serif;
     font-size: 14px;
     font-weight: 500;
@@ -352,7 +375,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 .menu-item {
   border-radius: 6px;
   padding: 10px 12px;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 14px;
 

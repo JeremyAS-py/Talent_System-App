@@ -1,23 +1,67 @@
 <template>
-  <q-layout view="hHh lpR fFf">
-    <!-- Barra lateral -->
-    <MenuSidebar
-      :initialOpen="false"
-      :is-open="sidebarOpen"
-      @toggle="sidebarOpen = $event"
-      @navigate="handleNavigation"
-    />
+  <q-layout view="hHh lpR fFf" class="bg-page">
+    <!-- DRAWER LATERAL -->
+    <q-drawer
+      v-model="leftDrawerOpen"
+      side="left"
+      overlay
+      behavior="mobile"
+      :width="260"
+      class="main-drawer bg-primary text-white"
+    >
+      <div class="drawer-content">
+        <!-- Logo / espacio superior -->
+        <div class="drawer-header q-px-lg q-pt-md q-pb-lg">
+          <div class="drawer-title">
+            <span class="drawer-app-name">Sistema de Gestión</span>
+          </div>
+        </div>
 
-    <!-- Modal de carga masiva -->
-    <BulkUploadPage :modelValue="showCargaMasiva" @close="showCargaMasiva = false" />
+        <!-- OPCIONES PRINCIPALES -->
+        <q-list padding class="drawer-list">
+          <!-- INICIO (lleva a Vista General) -->
+          <q-item clickable v-ripple class="drawer-item" @click="goHome">
+            <q-item-section avatar>
+              <img :src="inicioIcon" alt="Inicio" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Inicio</q-item-section>
+          </q-item>
+
+          <!-- CARGA MASIVA -->
+          <q-item clickable v-ripple class="drawer-item" @click="goCargaMasiva">
+            <q-item-section avatar>
+              <img :src="cargaIcon" alt="Carga masiva" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Carga Masiva</q-item-section>
+          </q-item>
+
+          <!-- EXPORTAR -->
+          <q-item clickable v-ripple class="drawer-item" @click="goExportar">
+            <q-item-section avatar>
+              <q-icon name="download" size="22px" class="drawer-icon-icon" />
+            </q-item-section>
+            <q-item-section>Exportar</q-item-section>
+          </q-item>
+        </q-list>
+
+        <!-- CERRAR SESIÓN ABAJO -->
+        <div class="drawer-footer q-px-lg q-pb-lg q-pt-md">
+          <q-item clickable v-ripple class="drawer-item drawer-item-logout" @click="logout">
+            <q-item-section avatar>
+              <img :src="cerrarIcon" alt="Cerrar sesión" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Cerrar Sesión</q-item-section>
+          </q-item>
+        </div>
+      </div>
+    </q-drawer>
 
     <!-- HEADER -->
     <q-header elevated class="bg-primary text-white">
       <div class="header-content">
         <!-- IZQUIERDA: menú + título -->
         <div class="left-section">
-          <!-- BOTÓN HAMBURGUESA -->
-          <q-btn flat dense round icon="menu" class="menu-btn" @click="toggleSidebar" />
+          <q-btn flat dense round icon="menu" class="menu-btn" size="md" @click="toggleDrawer" />
 
           <div class="title-section">
             <div class="title-app">Sistema de Gestión de Talento Interno</div>
@@ -50,7 +94,7 @@
                   clickable
                   v-ripple
                   v-close-popup
-                  @click="navigate('/crear-vacante')"
+                  @click="navigate('/app/crear-vacante')"
                   class="menu-item"
                 >
                   <q-item-section avatar>
@@ -118,41 +162,85 @@
     <q-page-container class="page-container">
       <router-view />
     </q-page-container>
+    <!-- Carga Masiva modal (componente flotante) -->
+    <CargaMasivaPage :modelValue="showCargaMasiva" @close="() => (showCargaMasiva = false)" />
   </q-layout>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import MenuSidebar from '../components/MenuSidebar.vue'
-import BulkUploadPage from '../pages/BulkUploadPage.vue'
+import { ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+import inicioIcon from 'assets/dashboard/home.png'
+import cargaIcon from 'assets/dashboard/carga-de-archivos.png'
+import cerrarIcon from 'assets/dashboard/cerrar-sesion.png'
+import CargaMasivaPage from 'pages/CargaMasivaPage.vue'
 
 const router = useRouter()
-const tab = ref('demanda') // tab activa por defecto
+const route = useRoute()
 
+// Drawer lateral
+const leftDrawerOpen = ref(false)
 const showCargaMasiva = ref(false)
-
-function handleNavigation(destino) {
-  if (destino === 'bulk-upload') {
-    showCargaMasiva.value = true
-  }
+const toggleDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
-const sidebarOpen = ref(false)
-
-function toggleSidebar() {
-  sidebarOpen.value = !sidebarOpen.value
+// Mapa tab -> RUTA COMPLETA (incluye /app)
+const tabRouteMap = {
+  vista: '/app/vista-general',
+  mapping: '/app/skill-mapping',
+  demanda: '/app/demanda-talento',
+  brechas: '/app/brechas-skill',
 }
+
+// Detecta qué tab va con la ruta actual
+function getTabFromPath(path) {
+  if (path.startsWith('/app/skill-mapping')) return 'mapping'
+  if (path.startsWith('/app/demanda-talento')) return 'demanda'
+  if (path.startsWith('/app/brechas-skill')) return 'brechas'
+  // por defecto: Vista General
+  return 'vista'
+}
+
+// Tab activa según ruta inicial
+const tab = ref(getTabFromPath(route.path))
 
 // En producción esto vendría del login / store
 const user = {
   name: 'F. Rosales',
 }
 
+// Navegar a una ruta
 function navigate(path) {
   router.push(path)
 }
 
+// Acciones del drawer
+function goHome() {
+  navigate('/app/vista-general')
+  leftDrawerOpen.value = false
+}
+
+function goCargaMasiva() {
+  // abrir modal de carga masiva
+  showCargaMasiva.value = true
+  leftDrawerOpen.value = false
+}
+
+function goExportar() {
+  // ajusta la ruta a la que tengas creada (ej: '/app/exportar')
+  navigate('/app/exportar')
+  leftDrawerOpen.value = false
+}
+
+function logout() {
+  // ruta de login es '/', no '/login'
+  navigate('/')
+  leftDrawerOpen.value = false
+}
+
+// Cuando haces click en una tab
 function changeTab(tabName) {
   tab.value = tabName
   const path = tabRouteMap[tabName]

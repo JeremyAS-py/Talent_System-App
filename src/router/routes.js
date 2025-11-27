@@ -14,7 +14,7 @@ const routes = [
       // redirige /app -> /app/vista-general
       {
         path: '',
-        redirect: '/vista-general',
+        redirect: '/app/vista-general',
       },
 
       // Vista General (IndexPage)
@@ -23,13 +23,6 @@ const routes = [
         name: 'vista-general',
         component: () => import('pages/IndexPage.vue'),
       },
-      { path: '', component: () => import('pages/IndexPage.vue') },
-
-      // English pages added
-      { path: 'bulk-upload', component: () => import('pages/BulkUploadPage.vue') },
-      { path: 'skill-gaps', component: () => import('pages/SkillGapsPage.vue') },
-      { path: 'training-plan', component: () => import('pages/TrainingPlanPage.vue') },
-      { path: 'skill-mapping', component: () => import('pages/SkillMappingPage.vue') },
 
       // Skill Mapping (por ahora mismo componente; luego lo cambias)
       {
@@ -73,16 +66,8 @@ const routes = [
   },
 
   // Siempre al final
-        component: () => import('pages/CreateVacancyPage.vue'),
-      },
-    ],
-  },
-
-  // 👇 Esta SIEMPRE va como ÚLTIMA
   {
     path: '/:catchAll(.*)*',
-    component: () => import('pages/ErrorNotFound.vue'),
-  },
     component: () => import('pages/ErrorNotFound.vue'),
   },
 ]

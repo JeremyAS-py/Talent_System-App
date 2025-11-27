@@ -2,18 +2,20 @@
   <q-dialog v-model="isOpen" persistent>
     <q-card style="min-width: 900px; border-radius: 20px">
       <q-card-section class="q-pa-none">
-        <div class="header" style="border-top-left-radius: 20px; border-top-right-radius: 20px">
+        <div class="header">
           <div class="title-box">
-            <h2 style="color: white; margin: 0; padding: 12px 20px">Carga Masiva</h2>
+            <h2 style="color: white; margin: 0; padding: 12px 20px; font-weight: bold">
+              Carga Masiva
+            </h2>
           </div>
 
           <button class="btn-exit" @click="close" style="margin: 8px">
-            <img src="/icons/Salir.png" alt="Salir" class="icon-exit" />
+            <img :src="CierreSesionIcon" alt="Salir" class="icon-exit" />
             <span style="color: white">Salir</span>
           </button>
         </div>
 
-        <div style="padding: 20px 28px">
+        <div style="padding: 0px 28px">
           <p class="subtitle">
             Seleccione un archivo Excel o CSV para cargar colaboradores en masa
           </p>
@@ -39,7 +41,7 @@
 
             <template v-if="selectedFile">
               <div class="file-chip" @click.stop>
-                <img src="/icons/Documento.png" class="file-icon" />
+                <img src="/icons/xls.png" class="file-icon" />
                 <a class="file-name" href="#" @click.prevent>{{ selectedFile.name }}</a>
                 <button class="file-remove" @click.stop.prevent="clearFile">✕</button>
               </div>
@@ -50,7 +52,7 @@
                 <img src="/icons/Cargar.png" class="upload-icon" />
               </div>
 
-              <p class="upload-text">Arrastra y suelta el archivo aquí</p>
+              <p class="upload-text">Selecciona o arrastra y suelta el archivo aquí</p>
             </template>
           </div>
 
@@ -83,9 +85,54 @@
         </div>
       </q-card-section>
 
-      <q-card-actions align="right">
-        <q-btn flat label="Cancelar" @click="close" />
-        <q-btn label="Cargar" color="primary" @click="upload" />
+      <q-card-actions align="center" class="q-pb-md">
+        <q-btn flat label="Cancelar" @click="close" style="border-radius: 8px" />
+        <q-btn
+          label="Cargar"
+          color="primary"
+          @click="upload"
+          unelevated
+          style="border-radius: 8px; padding: 6px 24px"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- Success Dialog -->
+  <q-dialog v-model="showSuccessDialog" persistent>
+    <q-card class="success-dialog">
+      <q-card-section class="text-center">
+        <q-icon name="check_circle" color="positive" size="80px" />
+        <h5 class="q-mt-md">¡Éxito!</h5>
+        <p>{{ successMessage }}</p>
+      </q-card-section>
+      <q-card-actions align="center">
+        <q-btn
+          label="Aceptar"
+          color="primary"
+          unelevated
+          @click="showSuccessDialog = false"
+          style="border-radius: 8px"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+  <!-- Warning Dialog -->
+  <q-dialog v-model="showWarningDialog" persistent>
+    <q-card class="warning-dialog">
+      <q-card-section class="text-center">
+        <q-icon name="warning" color="warning" size="80px" />
+        <h5 class="q-mt-md">Atención</h5>
+        <p>{{ warningMessage }}</p>
+      </q-card-section>
+      <q-card-actions align="center">
+        <q-btn
+          label="Aceptar"
+          color="warning"
+          unelevated
+          @click="showWarningDialog = false"
+          style="border-radius: 8px"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -93,7 +140,8 @@
 
 <script setup>
 import { ref, defineEmits, defineProps, watch } from 'vue'
-import axios from 'axios'
+import { api } from 'src/boot/axios.js'
+import CierreSesionIcon from '../assets/dashboard/cerrar-sesion.png'
 // use dynamic import for xlsx to avoid build-time resolution errors when dependency not installed
 
 const emit = defineEmits(['close'])
@@ -103,6 +151,10 @@ const props = defineProps({
 
 // Estado interno del modal
 const isOpen = ref(props.modelValue)
+const showSuccessDialog = ref(false)
+const successMessage = ref('')
+const showWarningDialog = ref(false)
+const warningMessage = ref('')
 
 // Sincroniza apertura/cierre con MainLayout
 watch(
@@ -223,8 +275,17 @@ const upload = () => {
 
   ;(async () => {
     try {
+      // ensure auth token is attached if present
+      try {
+        // LoginForm stores the token under 'token'; some code used 'authToken'.
+        const t = localStorage.getItem('token') || localStorage.getItem('authToken')
+        if (t) api.defaults.headers.common['Authorization'] = 'Bearer ' + t
+      } catch (e) {
+        console.warn('Unable to read token from localStorage', e)
+      }
+
       // 1. obtener colaboradores existentes
-      const resp = await axios.get('/Colaborador')
+      const resp = await api.get('/api/Colaborador')
       const existing = resp.data || []
       const existingDnis = new Set((existing || []).map((c) => String(c.dni).trim()))
 
@@ -246,9 +307,11 @@ const upload = () => {
       )
 
       if (missingDniRows.length) {
-        alert(
-          `Hay filas sin DNI en las posiciones: ${missingDniRows.join(', ')}. Corrige el archivo y vuelve a intentar.`,
-        )
+        warningMessage.value = `Hay filas sin DNI en las posiciones: ${missingDniRows.join(
+          ', ',
+        )}. Corrige el archivo y vuelve a intentar.`
+        showWarningDialog.value = true
+        clearFile()
         return
       }
 
@@ -257,7 +320,10 @@ const upload = () => {
         if (duplicatesInFile.length) msgs.push(`Duplicados en archivo: ${duplicatesInFile.length}`)
         if (duplicatesExisting.length)
           msgs.push(`Ya existen en sistema (por DNI): ${duplicatesExisting.length}`)
-        alert(`No se realizará la carga. ${msgs.join(' - ')}`)
+
+        warningMessage.value = `No se realizará la carga.\n${msgs.join(' - ')}`
+        showWarningDialog.value = true
+        clearFile()
         return
       }
 
@@ -266,9 +332,15 @@ const upload = () => {
       const failed = []
       for (const r of rowsData) {
         try {
-          await axios.post('/Colaborador', r)
+          await api.post('/api/Colaborador', r)
           created.push(r.dni)
         } catch (err) {
+          // if auth error, bail out with clear message
+          const status = err?.response?.status
+          if (status === 401 || status === 403) {
+            alert('No autorizado. Por favor inicia sesión con un usuario con el rol adecuado.')
+            return
+          }
           failed.push({ dni: r.dni, error: err?.message ?? String(err) })
         }
       }
@@ -279,8 +351,9 @@ const upload = () => {
         )
         console.error('Failed rows:', failed)
       } else {
-        alert(`Carga exitosa. Colaboradores creados: ${created.length}`)
-        // limpiar estado
+        successMessage.value = `Carga exitosa. Colaboradores creados: ${created.length}`
+        showSuccessDialog.value = true
+        close() // Cierra el modal de carga masiva
         clearFile()
       }
     } catch (err) {
@@ -348,8 +421,11 @@ function close() {
   align-items: center;
   background: #2469bc;
   color: white;
-  padding: 15px 20px;
-  border-radius: 15px;
+  padding: 8px 20px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .title-box {
@@ -500,26 +576,11 @@ function close() {
   overflow: auto;
 }
 
-/* BOTONES */
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 30px;
-  gap: 20px;
-}
-.btn {
-  width: 140px;
-  padding: 12px 0;
-  font-size: 17px;
-  color: #fff;
-  border-radius: 18px;
-  cursor: pointer;
-  border: none;
-}
-.btn.load {
-  background: #5387c5;
-}
-.btn.cancel {
-  background: #0f4a92;
+/* Dialogs */
+.success-dialog,
+.warning-dialog {
+  padding: 20px;
+  border-radius: 15px;
+  width: 400px;
 }
 </style>

@@ -136,7 +136,7 @@
                   clickable
                   v-ripple
                   v-close-popup
-                  @click="navigate('/crear-vacante')"
+                  @click="navigate('/app/crear-vacante')"
                   class="menu-item"
                 >
                   <q-item-section avatar>
@@ -229,19 +229,19 @@ const toggleDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
-// Mapa tab -> ruta (coincide con routes.js)
+// Mapa tab -> RUTA COMPLETA (incluye /app)
 const tabRouteMap = {
-  vista: '/vista-general',
-  mapping: '/skill-mapping',
-  demanda: '/demanda-talento',
-  brechas: '/brechas-skill'
+  vista: '/app/vista-general',
+  mapping: '/app/skill-mapping',
+  demanda: '/app/demanda-talento',
+  brechas: '/app/brechas-skill'
 }
 
 // Detecta qué tab va con la ruta actual
 function getTabFromPath (path) {
-  if (path.startsWith(tabRouteMap.mapping)) return 'mapping'
-  if (path.startsWith(tabRouteMap.demanda)) return 'demanda'
-  if (path.startsWith(tabRouteMap.brechas)) return 'brechas'
+  if (path.startsWith('/app/skill-mapping')) return 'mapping'
+  if (path.startsWith('/app/demanda-talento')) return 'demanda'
+  if (path.startsWith('/app/brechas-skill')) return 'brechas'
   // por defecto: Vista General
   return 'vista'
 }
@@ -254,32 +254,32 @@ const user = {
   name: 'F. Rosales'
 }
 
+// Navegar a una ruta
 function navigate (path) {
   router.push(path)
 }
 
 // Acciones del drawer
 function goHome () {
-  navigate('/vista-general')
+  navigate('/app/vista-general')
   leftDrawerOpen.value = false
 }
 
 function goCargaMasiva () {
-  // ajusta la ruta a la que tengas creada
-  navigate('/carga-masiva')
+  // ajusta la ruta a la que tengas creada (ej: '/app/carga-masiva')
+  navigate('/app/carga-masiva')
   leftDrawerOpen.value = false
 }
 
 function goExportar () {
-  // aquí podrías llevar a una pantalla de reportes / export
-  navigate('/exportar')
+  // ajusta la ruta a la que tengas creada (ej: '/app/exportar')
+  navigate('/app/exportar')
   leftDrawerOpen.value = false
 }
 
 function logout () {
-  // aquí puedes limpiar token/localStorage si ya lo tienes
-  // localStorage.removeItem('token')
-  navigate('/login')
+  // ruta de login es '/', no '/login'
+  navigate('/')
   leftDrawerOpen.value = false
 }
 

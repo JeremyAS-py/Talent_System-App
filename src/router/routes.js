@@ -14,7 +14,7 @@ const routes = [
       // redirige /app -> /app/vista-general
       {
         path: '',
-        redirect: '/vista-general',
+        redirect: '/app/vista-general',
       },
 
       // Vista General (IndexPage)

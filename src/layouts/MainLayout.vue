@@ -56,12 +56,20 @@
       </div>
     </q-drawer>
 
-    <!-- HEADER -->
-    <q-header elevated class="bg-primary text-white">
+    <!-- HEADER PRINCIPAL (se oculta en /app/colaboradores/registrar) -->
+    <q-header v-if="showLayout" elevated class="bg-primary text-white">
       <div class="header-content">
         <!-- IZQUIERDA: menú + título -->
         <div class="left-section">
-          <q-btn flat dense round icon="menu" class="menu-btn" size="md" @click="toggleDrawer" />
+          <q-btn
+            flat
+            dense
+            round
+            icon="menu"
+            class="menu-btn"
+            size="md"
+            @click="toggleDrawer"
+          />
 
           <div class="title-section">
             <div class="title-app">Sistema de Gestión de Talento Interno</div>
@@ -81,7 +89,7 @@
                   clickable
                   v-ripple
                   v-close-popup
-                  @click="navigate('/colaboradores/registrar')"
+                  @click="navigate('/app/colaboradores/registrar')"
                   class="menu-item"
                 >
                   <q-item-section avatar>
@@ -162,13 +170,14 @@
     <q-page-container class="page-container">
       <router-view />
     </q-page-container>
+
     <!-- Carga Masiva modal (componente flotante) -->
     <CargaMasivaPage :modelValue="showCargaMasiva" @close="() => (showCargaMasiva = false)" />
   </q-layout>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 import inicioIcon from 'assets/dashboard/home.png'
@@ -205,6 +214,12 @@ function getTabFromPath(path) {
 
 // Tab activa según ruta inicial
 const tab = ref(getTabFromPath(route.path))
+
+// Ocultar header (y tabs) en páginas de formulario pantalla completa
+// ej: /app/colaboradores/registrar
+const showLayout = computed(() => {
+  return !route.path.startsWith('/app/colaboradores/registrar')
+})
 
 // En producción esto vendría del login / store
 const user = {

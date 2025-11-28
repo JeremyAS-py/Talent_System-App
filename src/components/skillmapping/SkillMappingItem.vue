@@ -126,8 +126,16 @@
               <q-icon name="img:icons/SkillMapIcon/tres-puntos.png" size="20px" />
             </q-btn>
           </div>
+          <!-- Botón Ver Perfil -->
           <div class="q-mt-md">
-            <q-btn unelevated rounded color="primary" label="Ver Perfil" class="full-width" />
+            <q-btn
+              unelevated
+              rounded
+              color="primary"
+              label="Ver Perfil"
+              class="full-width"
+              @click="irAPerfil"
+            />
           </div>
         </div>
       </div>
@@ -137,6 +145,8 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 const props = defineProps({
   colaborador: {
@@ -176,6 +186,14 @@ const highlightedFullName = computed(() => {
 const highlightedRole = computed(() => {
   return highlight(props.colaborador.rolNombre || '', props.searchTerm)
 })
+
+function irAPerfil() {
+  // Ajusta el name/path a como tengas definida la ruta en tu router
+  router.push({
+    name: 'perfil-colaborador', // o path: '/app/perfil-colaborador/' + props.colaborador.colaboradorId
+    params: { id: props.colaborador.colaboradorId },
+  })
+}
 </script>
 
 <style scoped>
@@ -238,4 +256,3 @@ const highlightedRole = computed(() => {
   font-weight: 600;
 }
 </style>
-

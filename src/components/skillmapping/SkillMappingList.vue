@@ -2,7 +2,7 @@
   <div>
     <SkillMappingItem
       v-for="colaborador in colaboradores"
-      :key="colaborador.id"
+      :key="colaborador.colaboradorId"
       :colaborador="colaborador"
       :search-term="searchTerm"
     />

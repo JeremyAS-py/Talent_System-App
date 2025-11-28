@@ -349,6 +349,9 @@
                       dense
                       no-caps
                       class="btn-asignar"
+                      :disable="asignando"
+                      :loading="asignando"
+                      @click.stop="asignarCandidato(cand)"
                     >
                       <img :src="agregarIcon" class="btn-icon" alt="Asignar" />
                       <span class="btn-label">Asignar</span>
@@ -366,6 +369,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
 
 // ICONOS
@@ -378,6 +382,8 @@ import descargasIcon from 'assets/dashboard/descargas.png'
 import descargarWhiteIcon from 'assets/dashboard/descargar (1).png'
 import birreteIcon from 'assets/dashboard/birrete.png'
 import agregarIcon from 'assets/dashboard/agregar_.png'
+
+const $q = useQuasar()
 
 // ======== STATE PRINCIPAL ========
 const vacantes = ref([])
@@ -406,6 +412,7 @@ const dialogCandidatosOpen = ref(false)
 const vacanteSeleccionada = ref(null)
 const candidatos = ref([])
 const loadingCandidatos = ref(false)
+const asignando = ref(false)
 
 // ==== MAPEO URGENCIA ====
 function mapUrgencia (nombre) {
@@ -464,6 +471,7 @@ async function cargarData () {
         area: v.perfilNombre,
         urgencia: urg.label,
         urgenciaColor: urg.color,
+        estado: v.estado, // 👈 importante para filtrar solo abiertas
         coberturaInterna: 0,
         requeridos: 1,
         departamento: null, // pendiente hasta que backend lo provea
@@ -502,27 +510,30 @@ onMounted(cargarData)
 
 // ======== FILTRADO ========
 const vacantesFiltradas = computed(() => {
-  return vacantes.value.filter(v => {
-    const texto = (filtroTexto.value || '').toLowerCase()
+  return vacantes.value
+    // Solo mostrar vacantes abiertas en Demanda de Talento
+    .filter(v => !v.estado || v.estado.toLowerCase() === 'abierta')
+    .filter(v => {
+      const texto = (filtroTexto.value || '').toLowerCase()
 
-    const matchTexto =
-      !texto ||
-      v.puesto.toLowerCase().includes(texto) ||
-      (v.area && v.area.toLowerCase().includes(texto))
+      const matchTexto =
+        !texto ||
+        v.puesto.toLowerCase().includes(texto) ||
+        (v.area && v.area.toLowerCase().includes(texto))
 
-    const matchDepto =
-      !filtroDepartamento.value || v.departamento === filtroDepartamento.value
+      const matchDepto =
+        !filtroDepartamento.value || v.departamento === filtroDepartamento.value
 
-    const matchRol = !filtroRol.value || v.rol === filtroRol.value
+      const matchRol = !filtroRol.value || v.rol === filtroRol.value
 
-    const matchSkill =
-      !filtroSkill.value ||
-      (v.skillsRequeridos || []).some(skill =>
-        skill.toLowerCase().includes(filtroSkill.value.toLowerCase())
-      )
+      const matchSkill =
+        !filtroSkill.value ||
+        (v.skillsRequeridos || []).some(skill =>
+          skill.toLowerCase().includes(filtroSkill.value.toLowerCase())
+        )
 
-    return matchTexto && matchDepto && matchRol && matchSkill
-  })
+      return matchTexto && matchDepto && matchRol && matchSkill
+    })
 })
 
 // ======== MÉTRICAS RESUMEN ========
@@ -639,6 +650,7 @@ async function openCandidatos (vac) {
 
     const ranking = resRanking.data || []
     const reqs = (resReqs.data || []).map(r => ({
+
       skillId: r.skillId,
       nivelDeseado: r.nivelDeseado ?? r.nivelRequerido ?? 1,
       peso: r.peso ?? 1,
@@ -668,6 +680,43 @@ async function openCandidatos (vac) {
     console.error('Error cargando ranking de candidatos', err)
   } finally {
     loadingCandidatos.value = false
+  }
+}
+
+// ======== ASIGNAR CANDIDATO ========
+async function asignarCandidato (cand) {
+  if (!vacanteSeleccionada.value) return
+
+  try {
+    asignando.value = true
+
+    // POST al endpoint que crea la Postulación (estado "En Revisión")
+    await api.post('/api/postulacion', {
+      vacanteId: vacanteSeleccionada.value.id,
+      colaboradorId: cand.id,
+      matchScore: typeof cand.match === 'number' ? cand.match : 0
+    })
+
+    $q.notify({
+      type: 'positive',
+      message: 'Postulación creada (En revisión)'
+    })
+
+    dialogCandidatosOpen.value = false
+    await cargarData() // recargar para que la vacante cerrada desaparezca
+  } catch (err) {
+    console.error('Error asignando candidato', err)
+
+    const msg =
+      err?.response?.data?.message ||
+      'No se pudo crear la postulación'
+
+    $q.notify({
+      type: 'negative',
+      message: msg
+    })
+  } finally {
+    asignando.value = false
   }
 }
 </script>

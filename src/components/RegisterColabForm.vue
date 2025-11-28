@@ -321,7 +321,6 @@
             />
 
             <!-- Nivel (slider) -->
-            <!-- Nivel (slider) -->
             <div>
               <div class="text-subtitle2 q-mb-xs">Nivel</div>
               <q-slider
@@ -370,12 +369,25 @@
 
         <q-card-section>
           <div class="q-gutter-md">
-            <q-input
+            <!-- SELECT DE CERTIFICACIÓN -->
+            <q-select
               dense
               outlined
-              v-model="certDialog.form.nombre"
+              v-model="certDialog.form.certificacionId"
+              :options="certificacionOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
               label="Nombre de la certificación *"
+              use-input
+              fill-input
+              input-debounce="0"
+              :rules="[(val) => !!val || 'Selecciona una certificación']"
+              @update:model-value="onCertSelected"
             />
+
+            <!-- Descripción (se autocompleta pero se puede editar) -->
             <q-input
               dense
               outlined
@@ -383,6 +395,8 @@
               type="textarea"
               label="Descripción"
             />
+
+            <!-- Fecha de obtención -->
             <q-input
               dense
               outlined
@@ -426,7 +440,7 @@ export default {
         fechaInicio: '',
         disponibleMovilidad: false,
 
-        // Skills y certificaciones (solo en UI por ahora)
+        // Skills y certificaciones
         skills: [],
         certificaciones: [],
       },
@@ -440,22 +454,26 @@ export default {
       filteredAreaOptions: [],
 
       // Catálogos para skills
-      skillCatalog: [], // [{ value, label, tipoSkillId, tipoSkillNombre }]
+      skillCatalog: [],
       skillOptions: [],
       tipoSkillOptions: [],
-      nivelOptions: [], // [{ value, label }]
+      nivelOptions: [],
+
+      // Catálogo certificaciones
+      certificacionCatalog: [],
+      certificacionOptions: [],
 
       // Dialog Skill
       skillDialog: {
         open: false,
-        mode: 'new', // 'new' | 'edit'
+        mode: 'new',
         editIndex: -1,
         form: {
           skillId: null,
           nombre: '',
           tipoSkillId: null,
           categoria: '',
-          sliderValue: 0, // 👈 Arranca en Principiante
+          sliderValue: 0,
           nivelId: null,
           nivelNombre: '',
           aniosExp: '',
@@ -468,6 +486,7 @@ export default {
         mode: 'new',
         editIndex: -1,
         form: {
+          certificacionId: null,
           nombre: '',
           descripcion: '',
           fechaObtencion: '',
@@ -477,7 +496,6 @@ export default {
   },
 
   computed: {
-    // ===== VALIDACIONES =====
     dniValid() {
       return /^[0-9]{8}$/.test(this.form.dni)
     },
@@ -534,48 +552,43 @@ export default {
   methods: {
     resetForm() {
       this.form = {
-        // Info personal
         dni: '',
         nombres: '',
         apellidos: '',
         correo: '',
         password: '',
-
-        // Info profesional
         departamentoId: null,
         rolId: null,
         areaId: null,
         fechaInicio: '',
         disponibleMovilidad: false,
-
-        // Skills y certificaciones
         skills: [],
         certificaciones: [],
       }
 
-      // reset extras
       this.showPassword = true
       this.skillDialog.open = false
       this.certDialog.open = false
     },
+
     onDniInput() {
-      // Solo números, máximo 8
       this.form.dni = (this.form.dni || '').replace(/\D/g, '').slice(0, 8)
     },
 
     async cargarCombos() {
       const api = this.$api
 
-      // Hago las peticiones en paralelo
       try {
-        const [rolesRes, deptRes, areaRes, skillRes, tipoRes, nivelRes] = await Promise.all([
-          api.get('/api/Rol'),
-          api.get('/api/Departamento'),
-          api.get('/api/Area/areas'),
-          api.get('/api/Skill'),
-          api.get('/api/Skill/tiposkill'),
-          api.get('/api/Nivel/niveles'),
-        ])
+        const [rolesRes, deptRes, areaRes, skillRes, tipoRes, nivelRes, certRes] =
+          await Promise.all([
+            api.get('/api/Rol'),
+            api.get('/api/Departamento'),
+            api.get('/api/Area/areas'),
+            api.get('/api/Skill'),
+            api.get('/api/Skill/tiposkill'),
+            api.get('/api/Nivel/niveles'),
+            api.get('/api/Certificacion'),
+          ])
 
         // ROL
         this.rolOptions = (rolesRes.data ?? []).map((r) => ({
@@ -618,6 +631,17 @@ export default {
           label: n.nombre ?? n.Nombre,
         }))
         this.nivelOptions.sort((a, b) => (a.value ?? 0) - (b.value ?? 0))
+
+        // CERTIFICACIONES
+        this.certificacionCatalog = (certRes.data ?? []).map((c) => ({
+          value: c.certificacionId ?? c.CertificacionId,
+          label: c.nombre ?? c.Nombre,
+          descripcion: c.descripcion ?? c.Descripcion ?? '',
+        }))
+        this.certificacionOptions = this.certificacionCatalog.map((c) => ({
+          value: c.value,
+          label: c.label,
+        }))
       } catch (e) {
         console.error('Error cargando combos:', e)
       }
@@ -632,7 +656,7 @@ export default {
         nombre: '',
         tipoSkillId: null,
         categoria: '',
-        sliderValue: 0, // 👈 aquí pon 0
+        sliderValue: 0,
         nivelId: null,
         nivelNombre: '',
         aniosExp: '',
@@ -644,7 +668,6 @@ export default {
       const s = this.form.skills[index]
       if (!s) return
 
-      // Buscar índice del nivel para el slider
       let sliderValue = 1
       const nivelIndex = this.nivelOptions.findIndex((n) => n.value === s.nivelId)
       if (nivelIndex >= 0) sliderValue = nivelIndex
@@ -674,7 +697,6 @@ export default {
     },
 
     onConfirmSkill() {
-      // Validaciones básicas
       if (!this.skillDialog.form.skillId) {
         this.$q.notify({
           type: 'warning',
@@ -691,10 +713,7 @@ export default {
       }
 
       const nivelIndex = this.skillDialog.form.sliderValue || 0
-      const nivelInfo = this.nivelOptions[nivelIndex] || {
-        value: null,
-        label: '',
-      }
+      const nivelInfo = this.nivelOptions[nivelIndex] || { value: null, label: '' }
 
       const skillData = {
         skillId: this.skillDialog.form.skillId,
@@ -735,6 +754,7 @@ export default {
       this.certDialog.mode = 'new'
       this.certDialog.editIndex = -1
       this.certDialog.form = {
+        certificacionId: null,
         nombre: '',
         descripcion: '',
         fechaObtencion: '',
@@ -749,6 +769,7 @@ export default {
       this.certDialog.mode = 'edit'
       this.certDialog.editIndex = index
       this.certDialog.form = {
+        certificacionId: c.certificacionId ?? null,
         nombre: c.nombre,
         descripcion: c.descripcion,
         fechaObtencion: c.fechaObtencion,
@@ -756,8 +777,16 @@ export default {
       this.certDialog.open = true
     },
 
+    onCertSelected(certId) {
+      const selected = this.certificacionCatalog.find((c) => c.value === certId)
+      if (!selected) return
+
+      this.certDialog.form.nombre = selected.label
+      this.certDialog.form.descripcion = selected.descripcion
+    },
+
     onConfirmCert() {
-      if (!this.certDialog.form.nombre) {
+      if (!this.certDialog.form.certificacionId) {
         this.$q.notify({
           type: 'warning',
           message: 'El nombre de la certificación es obligatorio.',
@@ -766,6 +795,7 @@ export default {
       }
 
       const certData = {
+        certificacionId: this.certDialog.form.certificacionId,
         nombre: this.certDialog.form.nombre,
         descripcion: this.certDialog.form.descripcion,
         fechaObtencion: this.certDialog.form.fechaObtencion,
@@ -820,25 +850,25 @@ export default {
       }
 
       try {
+        // 1) Crear colaborador
         const res = await api.post('/api/Colaborador', payloadColaborador)
         const colaboradorCreado = res.data
         const colaboradorId = colaboradorCreado.colaboradorId ?? colaboradorCreado.ColaboradorId
 
-        // Registrar skills
+        // 2) Registrar skills
         if (this.form.skills.length) {
-          await this.$api.post(`/api/ColaboradorSkill/${colaboradorId}/skills`, this.form.skills)
+          await api.post(`/api/ColaboradorSkill/${colaboradorId}/skills`, this.form.skills)
         }
 
-        // Registrar certificaciones
+        // 3) Registrar certificaciones (solo campos que el backend necesita)
         if (this.form.certificaciones.length) {
-          await this.$api.post(
-            `/api/ColaboradorCertificacion/${colaboradorId}`,
-            this.form.certificaciones,
-          )
-        }
+          const certPayload = this.form.certificaciones.map((c) => ({
+            certificacionId: c.certificacionId,
+            fechaObtencion: c.fechaObtencion,
+          }))
 
-        // TODO: aquí luego llamas a ColaboradorSkill y ColaboradorCertificacion
-        // usando this.form.skills y this.form.certificaciones
+          await api.post(`/api/ColaboradorCertificacion/${colaboradorId}`, certPayload)
+        }
 
         this.$q.notify({
           type: 'positive',
@@ -848,9 +878,13 @@ export default {
         this.resetForm()
       } catch (err) {
         console.error(err)
+        const backendMessage =
+          err?.response?.data?.message ||
+          err?.response?.data?.title ||
+          'Error al registrar colaborador.'
         this.$q.notify({
           type: 'negative',
-          message: 'Error al registrar colaborador.',
+          message: backendMessage,
           position: 'top-right',
         })
       }

@@ -74,7 +74,7 @@
 
       <!-- BLOQUE DERECHO: FILTRAR + EXPORTAR -->
       <div class="filters-actions row items-center q-gutter-sm">
-        <!-- Botón Filtrar -->
+        <!-- Botón Filtrar (por ahora solo decorativo) -->
         <q-btn outline color="grey-6" class="filter-btn" no-caps>
           <div class="row items-center no-wrap">
             <img :src="filtrarIcon" alt="Filtrar" class="btn-filter-icon" />
@@ -82,8 +82,14 @@
           </div>
         </q-btn>
 
-        <!-- Botón Exportar (solo “Exportar”) -->
-        <q-btn unelevated color="primary" no-caps class="export-btn">
+        <!-- Botón Exportar (general) -->
+        <q-btn
+          unelevated
+          color="primary"
+          no-caps
+          class="export-btn"
+          @click="exportarVacantes"
+        >
           <div class="row items-center no-wrap">
             <img :src="descargasIcon" alt="Exportar" class="btn-export-icon" />
             <span class="export-label">Exportar</span>
@@ -194,7 +200,14 @@
               <!-- Botones de acción -->
               <div class="col-12 col-sm-4">
                 <div class="action-buttons column items-end q-gutter-xs">
-                  <q-btn outline color="primary" no-caps dense class="btn-export-outline">
+                  <q-btn
+                    outline
+                    color="primary"
+                    no-caps
+                    dense
+                    class="btn-export-outline"
+                    @click="exportarVacante(vac.id)"
+                  >
                     <div class="row items-center no-wrap">
                       <img
                         :src="descargarWhiteIcon"
@@ -205,7 +218,13 @@
                     </div>
                   </q-btn>
 
-                  <q-btn unelevated color="primary" no-caps dense class="btn-reclutamiento">
+                  <q-btn
+                    unelevated
+                    color="primary"
+                    no-caps
+                    dense
+                    class="btn-reclutamiento"
+                  >
                     Reclutamiento externo
                   </q-btn>
                 </div>
@@ -230,7 +249,7 @@
             </div>
           </q-card-section>
 
-          <!-- FOOTER: Candidatos sugeridos -->
+          <!-- FOOTER: Candidatos sugeridos (solo layout, sin dialog) -->
           <div class="candidatos-footer row items-center justify-between">
             <div class="candidatos-text">Candidatos Sugeridos</div>
             <q-icon name="chevron_right" size="20px" />
@@ -242,108 +261,188 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { api } from 'boot/axios'
 
-// ICONOS (ajusta las rutas según tus archivos reales)
+// ICONOS
 import filtrarIcon from 'assets/dashboard/filtrar.png'
 import personasIcon from 'assets/dashboard/personas.png'
 import chequeIcon from 'assets/dashboard/cheque.png'
 import tendenciaIcon from 'assets/dashboard/tendencia.png'
 import busquedaIcon from 'assets/dashboard/busqueda.png'
 import descargasIcon from 'assets/dashboard/descargas.png'
-import descargarWhiteIcon from 'assets/dashboard/descargar (1).png' // o 'descargar (1).png'
+import descargarWhiteIcon from 'assets/dashboard/descargar (1).png'
 
-/* ========= DATA DE VACANTES (mock) ========= */
-const vacantes = ref([
-  {
-    id: 1,
-    puesto: 'Senior Engineer Backend',
-    area: 'Desarrollo Backend · Tecnología',
-    urgencia: 'URGENTE',
-    urgenciaColor: 'negative',
-    coberturaInterna: 50,
-    requeridos: 2,
-    departamento: 'Tecnología',
-    rol: 'Senior Engineer',
-    skillsRequeridos: ['Python · Avanzado', 'Machine Learning · Avanzado', 'SQL · Intermedio'],
-  },
-  {
-    id: 2,
-    puesto: 'DevOps Engineer',
-    area: 'DevOps · Tecnología',
-    urgencia: 'MEDIA',
-    urgenciaColor: 'warning',
-    coberturaInterna: 80,
-    requeridos: 1,
-    departamento: 'Tecnología',
-    rol: 'DevOps Engineer',
-    skillsRequeridos: ['Azure · Avanzado', 'Docker · Avanzado', 'CI/CD · Intermedio'],
-  },
-])
+// ======== STATE PRINCIPAL ========
+const vacantes = ref([]) // viene del backend
 
-/* ========= FILTROS ========= */
+// filtros
 const filtroTexto = ref('')
 const filtroDepartamento = ref(null)
 const filtroRol = ref(null)
 const filtroSkill = ref(null)
 
-const departamentoOptions = [
+// opciones de selects (se rellenan con backend donde aplique)
+const departamentoOptions = ref([
   { label: 'Todos los Departamentos', value: null },
-  { label: 'Tecnología', value: 'Tecnología' },
-  { label: 'Recursos Humanos', value: 'Recursos Humanos' },
-]
-
-const rolOptions = [
+])
+const rolOptions = ref([
   { label: 'Todos los Roles', value: null },
-  { label: 'Senior Engineer', value: 'Senior Engineer' },
-  { label: 'DevOps Engineer', value: 'DevOps Engineer' },
-]
-
-const skillOptions = [
+])
+const skillOptions = ref([
   { label: 'Todas las Skills', value: null },
-  { label: 'Python', value: 'Python' },
-  { label: 'Machine Learning', value: 'Machine Learning' },
-  { label: 'SQL', value: 'SQL' },
-  { label: 'Azure', value: 'Azure' },
-  { label: 'Docker', value: 'Docker' },
-  { label: 'CI/CD', value: 'CI/CD' },
-]
+])
 
-/* ========= VACANTES FILTRADAS ========= */
+// ======== CARGA DE DATA DESDE BACKEND ========
+const cargando = ref(false)
+
+function mapUrgencia(nombre) {
+  const n = (nombre || '').toLowerCase()
+  if (n === 'alta') return { label: 'URGENTE', color: 'negative' }
+  if (n === 'media') return { label: 'MEDIA', color: 'warning' }
+  if (n === 'baja') return { label: 'BAJA', color: 'info' }
+  return { label: nombre || 'SIN PRIORIDAD', color: 'grey-5' }
+}
+
+async function cargarData() {
+  try {
+    cargando.value = true
+
+    // 1) Vacantes
+    const resVac = await api.get('/api/vacante')
+    const lista = resVac.data || []
+
+    // 2) Skills para el combo de filtro
+    try {
+      const resSkills = await api.get('/api/skill')
+      const skills = resSkills.data || []
+      skillOptions.value = [
+        { label: 'Todas las Skills', value: null },
+        ...skills.map((s) => ({
+          label: s.nombre,
+          value: s.nombre,
+        })),
+      ]
+    } catch (err) {
+      console.error('Error cargando skills para filtro', err)
+    }
+
+    // 3) Departamentos para el combo (si tu backend los tiene)
+    try {
+      const resDep = await api.get('/api/departamento')
+      const deps = resDep.data || []
+      departamentoOptions.value = [
+        { label: 'Todos los Departamentos', value: null },
+        ...deps.map((d) => ({
+          label: d.nombre,
+          value: d.nombre,
+        })),
+      ]
+    } catch (err) {
+      console.warn('No se pudieron cargar departamentos (opcional)', err)
+    }
+
+    // 4) Mapear vacantes a estructura del frontend
+    const mapeadas = lista.map((v) => {
+      const urg = mapUrgencia(v.urgenciaNombre)
+      return {
+        id: v.vacanteId,
+        puesto: v.titulo,
+        area: v.perfilNombre, // "Desarrollo Backend · Tecnología" en tu Figma
+        urgencia: urg.label,
+        urgenciaColor: urg.color,
+        coberturaInterna: 0, // placeholder hasta que tengas el cálculo real
+        requeridos: 1, // si luego agregas campo "Cantidad", lo reemplazas aquí
+        departamento: null, // si tienes dpto ligado a la vacante, ponlo aquí
+        rol: v.perfilNombre, // lo usamos como "rol" para filtrar
+        skillsRequeridos: [],
+      }
+    })
+
+    // 5) Para cada vacante, traer sus skills requeridos
+    await Promise.all(
+      mapeadas.map(async (vac) => {
+        try {
+          const resSkillsReq = await api.get(`/api/vacante/${vac.id}/skills`)
+          const reqs = resSkillsReq.data || []
+          vac.skillsRequeridos = reqs.map((r) => {
+            const nombre = r.skillNombre || r.skillName
+            const nivel = r.nivelNombre || null
+            return nivel ? `${nombre} · ${nivel}` : nombre
+          })
+        } catch (err) {
+          console.error('Error cargando skills de vacante', vac.id, err)
+          vac.skillsRequeridos = []
+        }
+      })
+    )
+
+    vacantes.value = mapeadas
+  } catch (error) {
+    console.error('Error cargando vacantes', error)
+  } finally {
+    cargando.value = false
+  }
+}
+
+onMounted(cargarData)
+
+// ======== FILTRADO ========
 const vacantesFiltradas = computed(() => {
   return vacantes.value.filter((v) => {
-    const matchTexto =
-      !filtroTexto.value || v.puesto.toLowerCase().includes(filtroTexto.value.toLowerCase())
+    const texto = (filtroTexto.value || '').toLowerCase()
 
-    const matchDepto = !filtroDepartamento.value || v.departamento === filtroDepartamento.value
+    const matchTexto =
+      !texto ||
+      v.puesto.toLowerCase().includes(texto) ||
+      (v.area && v.area.toLowerCase().includes(texto))
+
+    const matchDepto =
+      !filtroDepartamento.value || v.departamento === filtroDepartamento.value
 
     const matchRol = !filtroRol.value || v.rol === filtroRol.value
 
     const matchSkill =
       !filtroSkill.value ||
-      v.skillsRequeridos.some((skill) =>
-        skill.toLowerCase().includes(filtroSkill.value.toLowerCase()),
+      (v.skillsRequeridos || []).some((skill) =>
+        skill.toLowerCase().includes(filtroSkill.value.toLowerCase())
       )
 
     return matchTexto && matchDepto && matchRol && matchSkill
   })
 })
 
-/* ========= MÉTRICAS RESUMEN ========= */
+// ======== MÉTRICAS RESUMEN ========
 const totalVacantes = computed(() => vacantesFiltradas.value.length)
 
 const vacantesUrgentes = computed(
-  () => vacantesFiltradas.value.filter((v) => v.urgencia === 'URGENTE').length,
+  () => vacantesFiltradas.value.filter((v) => v.urgencia === 'URGENTE').length
 )
 
 const coberturaInternaPromedio = computed(() => {
   if (!vacantesFiltradas.value.length) return 0
-  const suma = vacantesFiltradas.value.reduce((acc, v) => acc + v.coberturaInterna, 0)
+  const suma = vacantesFiltradas.value.reduce(
+    (acc, v) => acc + (v.coberturaInterna || 0),
+    0
+  )
   return Math.round(suma / vacantesFiltradas.value.length)
 })
 
-// por ahora 0; luego lo puedes calcular de verdad
+// de momento 0; si luego tienes un KPI de skills críticos, lo conectamos
 const skillsCriticosCubiertos = computed(() => 0)
+
+// ======== ACCIONES EXPORTAR ========
+function exportarVacantes() {
+  // Si tienes un endpoint general de exportación de KPIs o vacantes,
+  // lo puedes llamar aquí. Por ahora solo dejo un console:
+  console.log('Exportar vacantes (pendiente de definir endpoint)')
+}
+
+function exportarVacante(vacId) {
+  // Usa el ExportacionController: GET /api/exportacion/ranking/{vacanteId}
+  const base = api.defaults.baseURL || 'http://localhost:5066'
+  window.open(`${base}/api/exportacion/ranking/${vacId}`, '_blank')
+}
 </script>
 
 <style scoped>

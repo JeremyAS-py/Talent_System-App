@@ -550,6 +550,32 @@ export default {
   },
 
   methods: {
+    resetForm() {
+      this.form = {
+        // Info personal
+        dni: '',
+        nombres: '',
+        apellidos: '',
+        correo: '',
+        password: '',
+
+        // Info profesional
+        departamentoId: null,
+        rolId: null,
+        areaId: null,
+        fechaInicio: '',
+        disponibleMovilidad: false,
+
+        // Skills y certificaciones
+        skills: [],
+        certificaciones: [],
+      }
+
+      // reset extras
+      this.showPassword = true
+      this.skillDialog.open = false
+      this.certDialog.open = false
+    },
     onDniInput() {
       // Solo números, máximo 8
       this.form.dni = (this.form.dni || '').replace(/\D/g, '').slice(0, 8)
@@ -837,6 +863,7 @@ export default {
           message: 'Colaborador registrado correctamente.',
           position: 'top-right',
         })
+        this.resetForm()
       } catch (err) {
         console.error(err)
         this.$q.notify({

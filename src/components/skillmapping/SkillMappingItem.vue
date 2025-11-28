@@ -10,12 +10,12 @@
         <!-- Columna Central: Info del Colaborador -->
         <div class="col q-pl-md">
           <div class="row items-center">
-            <div class="colaborador-nombre q-mr-sm">{{ colaborador.nombres }} {{ colaborador.apellidos }}</div>
+            <div class="colaborador-nombre q-mr-sm" v-html="highlightedFullName"></div>
           </div>
           <div class="colaborador-departamento text-weight-bold">
             {{ colaborador.areaNombre || colaborador.departamentoNombre }}
           </div>
-          <div class="colaborador-rol">{{ colaborador.rolNombre }}</div>
+          <div class="colaborador-rol" v-html="highlightedRole"></div>
           <div class="text-caption text-grey-5">
             Última actualización: {{ colaborador.fechaAlta || 'N/A' }}
           </div>
@@ -38,6 +38,15 @@
                 >
                   {{ skill.nombre }}
                 </q-chip>
+                <q-chip
+                  v-if="colaborador.technicalSkills.length > 3"
+                  dense
+                  outline
+                  color="grey-7"
+                  class="skill-chip-more"
+                >
+                  +{{ colaborador.technicalSkills.length - 3 }}
+                </q-chip>
                 <div v-if="!colaborador.technicalSkills.length" class="text-caption text-grey-6">
                   No hay skills técnicos.
                 </div>
@@ -58,6 +67,15 @@
                 >
                   {{ skill.nombre }}
                 </q-chip>
+                <q-chip
+                  v-if="colaborador.softSkills.length > 3"
+                  dense
+                  outline
+                  color="grey-7"
+                  class="skill-chip-more"
+                >
+                  +{{ colaborador.softSkills.length - 3 }}
+                </q-chip>
                 <div v-if="!colaborador.softSkills.length" class="text-caption text-grey-6">
                   No hay skills blandos.
                 </div>
@@ -77,6 +95,15 @@
                   class="skill-chip text-weight-medium"
                 >
                   {{ skill.nombre }}
+                </q-chip>
+                <q-chip
+                  v-if="colaborador.languageSkills.length > 3"
+                  dense
+                  outline
+                  color="grey-7"
+                  class="skill-chip-more"
+                >
+                  +{{ colaborador.languageSkills.length - 3 }}
                 </q-chip>
                 <div v-if="!colaborador.languageSkills.length" class="text-caption text-grey-6">
                   No hay idiomas.
@@ -109,7 +136,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   colaborador: {
     type: Object,
     required: true,
@@ -125,6 +154,27 @@ defineProps({
       languageSkills: [],
     }),
   },
+  searchTerm: {
+    type: String,
+    default: '',
+  },
+})
+
+const highlight = (text, term) => {
+  if (!term) {
+    return text
+  }
+  const regex = new RegExp(`(${term})`, 'gi')
+  return text.replace(regex, '<mark>$1</mark>')
+}
+
+const highlightedFullName = computed(() => {
+  const fullName = `${props.colaborador.nombres || ''} ${props.colaborador.apellidos || ''}`
+  return highlight(fullName, props.searchTerm)
+})
+
+const highlightedRole = computed(() => {
+  return highlight(props.colaborador.rolNombre || '', props.searchTerm)
 })
 </script>
 
@@ -162,14 +212,30 @@ defineProps({
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
 }
 
 .skill-chip {
   font-size: 17px;
   border-radius: 8px;
 }
+
+.skill-chip-more {
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
 .colaborador-acciones {
   display: flex;
   gap: 8px; /* separación entre botones */
 }
+
+:deep(mark) {
+  background-color: #ffecb3;
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 600;
+}
 </style>
+

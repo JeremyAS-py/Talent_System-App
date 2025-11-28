@@ -4,6 +4,7 @@
       v-for="colaborador in colaboradores"
       :key="colaborador.id"
       :colaborador="colaborador"
+      :search-term="searchTerm"
     />
     <div v-if="!colaboradores.length" class="text-center text-grey-6 q-mt-xl">
       <q-icon name="person_search" size="4em" />
@@ -20,6 +21,10 @@ defineProps({
   colaboradores: {
     type: Array,
     required: true,
+  },
+  searchTerm: {
+    type: String,
+    default: '',
   },
 })
 </script>

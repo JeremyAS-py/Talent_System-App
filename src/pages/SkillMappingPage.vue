@@ -39,6 +39,7 @@
                   v-model="searchTerm"
                   placeholder="Nombre o Puesto"
                   debounce="300"
+                  clearable
                 >
                   <template v-slot:prepend>
                     <q-icon name="search" />
@@ -98,7 +99,19 @@
           <q-icon name="error_outline" size="40px" />
           <p class="q-mt-md">Error al cargar los datos. Inténtalo de nuevo más tarde.</p>
         </div>
-        <SkillMappingList v-else :colaboradores="colaboradoresFiltrados" />
+        <SkillMappingList v-else :colaboradores="paginatedColaboradores" :search-term="searchTerm" />
+
+        <!-- Paginación -->
+        <div v-if="pageCount > 1" class="flex flex-center q-mt-lg">
+          <q-pagination
+            v-model="currentPage"
+            :max="pageCount"
+            direction-links
+            flat
+            color="grey"
+            active-color="primary"
+          />
+        </div>
       </q-page>
     </q-page-container>
   </q-layout>
@@ -144,44 +157,86 @@ const error = ref(null)
 const selectedDepartamento = ref(null)
 const selectedArea = ref(null)
 
+// --- PAGINATION STATE ---
+const currentPage = ref(1)
+const itemsPerPage = ref(8) // 8 items per page
+
 // --- API DATA ---
 const allSkills = ref([])
 const collaboratorsWithSkills = ref([])
 
-// --- FETCH DATA ---
+// --- FETCH DATA (Corregido) ---
 onMounted(async () => {
   try {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
 
     // Fetch all data in parallel
     const [skillsRes, collaboratorsRes] = await Promise.all([
       api.get('/api/Skill'),
-      api.get('/api/Colaborador') // Assuming this returns collaborators with skills
-    ]);
+      api.get('/api/Colaborador'),
+    ])
 
-    // Process skills for the filter
-    const skillTypeMap = { 1: 'Hard Skill', 2: 'Soft Skill', 3: 'Idioma' };
-    allSkills.value = (skillsRes.data || []).map(skill => ({
+    // 1. Process allSkills (CORRECCIÓN: Usar tipoSkillId)
+    const skillTypeMap = { 1: 'Hard Skill', 2: 'Soft Skill', 3: 'Idioma' }
+
+    allSkills.value = (skillsRes.data || []).map((skill) => ({
       ...skill,
-      type: skillTypeMap[skill.tipo] || 'Desconocido',
-    }));
+      // AHORA USAMOS 'tipoSkillId' en lugar de 'tipo'
+      type: skillTypeMap[skill.tipoSkillId] || 'Desconocido',
+    }))
 
-    // Process collaborators, mapping API properties to component properties
-    collaboratorsWithSkills.value = (collaboratorsRes.data || []).map(c => ({
-      ...c,
-      technicalSkills: c.habilidadesTecnicas || c.technicalSkills || [],
-      softSkills: c.habilidadesBlandas || c.softSkills || [],
-      languageSkills: c.idiomas || c.languageSkills || [],
-    }));
+    // Create a map for quick lookup by skill name to get its ID/Type
+    const skillLookup = allSkills.value.reduce((acc, skill) => {
+      // Aseguramos que la clave es el nombre del skill en minúsculas
+      acc[skill.nombre.toLowerCase()] = {
+        id: skill.skillId,
+        type: skill.type,
+        nombre: skill.nombre,
+      }
+      return acc
+    }, {})
 
+    // 2. Process collaborators
+    collaboratorsWithSkills.value = (collaboratorsRes.data || []).map((c) => {
+      const technicalSkills = []
+      const softSkills = []
+      const languageSkills = []
+
+      // La propiedad 'skills' viene de la API del colaborador
+      ;(c.skills || []).forEach((skillName) => {
+        const skillNameLower = skillName.toLowerCase()
+        const detail = skillLookup[skillNameLower]
+
+        if (detail) {
+          const skillObject = { id: detail.id, nombre: detail.nombre }
+
+          if (detail.type === 'Hard Skill') {
+            technicalSkills.push(skillObject)
+          } else if (detail.type === 'Soft Skill') {
+            softSkills.push(skillObject)
+          } else if (detail.type === 'Idioma') {
+            languageSkills.push(skillObject)
+          }
+        }
+      })
+
+      return {
+        ...c,
+        // Mapeamos los nombres de los props a los arrays generados
+        technicalSkills: technicalSkills,
+        softSkills: softSkills,
+        languageSkills: languageSkills,
+      }
+    })
   } catch (err) {
-    console.error('Error fetching data:', err);
-    error.value = 'No se pudo cargar la información. Por favor, revise la conexión con la API.';
+    console.error('Error fetching data:', err)
+    error.value = 'No se pudo cargar la información. Por favor, revise la conexión con la API.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 })
+// --- FIN DEL FETCH DATA CORREGIDO ---
 
 // --- OPTIONS for filters ---
 const departamentoOptions = computed(() =>
@@ -234,6 +289,23 @@ const colaboradoresFiltrados = computed(() => {
     return depMatch && areaMatch && searchMatch && skillsMatch
   })
 })
+
+// --- PAGINATION LOGIC ---
+const pageCount = computed(() => {
+  return Math.ceil(colaboradoresFiltrados.value.length / itemsPerPage.value)
+})
+
+const paginatedColaboradores = computed(() => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value
+  const endIndex = startIndex + itemsPerPage.value
+  return colaboradoresFiltrados.value.slice(startIndex, endIndex)
+})
+
+// Reset to page 1 when filters change
+watch(colaboradoresFiltrados, () => {
+  currentPage.value = 1
+})
+
 
 function clearFilters() {
   searchTerm.value = ''

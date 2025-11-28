@@ -10,29 +10,14 @@
         <!-- Columna Central: Info del Colaborador -->
         <div class="col q-pl-md">
           <div class="row items-center">
-            <div class="colaborador-nombre q-mr-sm">{{ colaborador.nombre }}</div>
-            <q-icon
-              v-if="colaborador.isActive"
-              name="circle"
-              color="positive"
-              size="12px"
-              class="q-mr-xs"
-            >
-              <q-tooltip>Activo</q-tooltip>
-            </q-icon>
-            <q-icon v-else name="circle" color="negative" size="12px" class="q-mr-xs">
-              <q-tooltip>Inactivo</q-tooltip>
-            </q-icon>
-            <q-icon v-if="colaborador.canMobilize" name="commute" color="info" size="18px">
-              <q-tooltip>Movilidad</q-tooltip>
-            </q-icon>
+            <div class="colaborador-nombre q-mr-sm">{{ colaborador.nombres }} {{ colaborador.apellidos }}</div>
           </div>
           <div class="colaborador-departamento text-weight-bold">
-            {{ colaborador.departamento }}
+            {{ colaborador.areaNombre || colaborador.departamentoNombre }}
           </div>
-          <div class="colaborador-rol">{{ colaborador.rol }}</div>
+          <div class="colaborador-rol">{{ colaborador.rolNombre }}</div>
           <div class="text-caption text-grey-5">
-            Última actualización: {{ colaborador.lastUpdate || 'N/A' }}
+            Última actualización: {{ colaborador.fechaAlta || 'N/A' }}
           </div>
         </div>
 
@@ -41,17 +26,17 @@
           <div class="row q-col-gutter-x-lg">
             <!-- Skills Técnicos -->
             <div class="col-12 col-sm-6">
-              <div class="skills-titulo">Skills Técnicos</div>
+              <div class="skills-titulo">Hard Skills</div>
               <div class="skills-chips">
                 <q-chip
                   v-for="skill in colaborador.technicalSkills.slice(0, 3)"
-                  :key="skill"
+                  :key="skill.id"
                   dense
                   color="light-blue-2"
                   text-color="primary"
                   class="skill-chip text-weight-medium"
                 >
-                  {{ skill }}
+                  {{ skill.nombre }}
                 </q-chip>
                 <div v-if="!colaborador.technicalSkills.length" class="text-caption text-grey-6">
                   No hay skills técnicos.
@@ -61,20 +46,40 @@
 
             <!-- Skills Blandos -->
             <div class="col-12 col-sm-6">
-              <div class="skills-titulo">Skills Blandos</div>
+              <div class="skills-titulo">Soft Skills</div>
               <div class="skills-chips">
                 <q-chip
                   v-for="skill in colaborador.softSkills.slice(0, 3)"
-                  :key="skill"
+                  :key="skill.id"
                   dense
                   color="green-2"
                   text-color="positive"
                   class="skill-chip text-weight-medium"
                 >
-                  {{ skill }}
+                  {{ skill.nombre }}
                 </q-chip>
                 <div v-if="!colaborador.softSkills.length" class="text-caption text-grey-6">
                   No hay skills blandos.
+                </div>
+              </div>
+            </div>
+
+            <!-- Idiomas -->
+            <div class="col-12 q-mt-md">
+              <div class="skills-titulo">Idiomas</div>
+              <div class="skills-chips">
+                <q-chip
+                  v-for="skill in colaborador.languageSkills.slice(0, 3)"
+                  :key="skill.id"
+                  dense
+                  color="orange-2"
+                  text-color="orange-9"
+                  class="skill-chip text-weight-medium"
+                >
+                  {{ skill.nombre }}
+                </q-chip>
+                <div v-if="!colaborador.languageSkills.length" class="text-caption text-grey-6">
+                  No hay idiomas.
                 </div>
               </div>
             </div>
@@ -109,14 +114,15 @@ defineProps({
     type: Object,
     required: true,
     default: () => ({
-      nombre: 'Nombre Apellido',
-      departamento: 'Departamento',
-      rol: 'Rol',
-      lastUpdate: 'N/A',
+      nombres: 'Nombre',
+      apellidos: 'Apellidos',
+      departamentoNombre: 'Departamento',
+      areaNombre: 'Área',
+      rolNombre: 'Rol',
+      fechaAlta: 'N/A',
       technicalSkills: [],
       softSkills: [],
-      isActive: false,
-      canMobilize: false,
+      languageSkills: [],
     }),
   },
 })

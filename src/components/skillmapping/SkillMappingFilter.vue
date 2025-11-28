@@ -29,13 +29,13 @@
             clickable
             v-ripple
             class="skill-item-selectable"
-            :class="{ selected: selectedSkills.includes(skill.name) }"
-            @click="toggleSkill(skill.name)"
+            :class="{ selected: selectedSkills.includes(skill.nombre) }"
+            @click="toggleSkill(skill.nombre)"
           >
             <q-item-section>
-              <q-item-label>{{ skill.name }}</q-item-label>
+              <q-item-label>{{ skill.nombre }}</q-item-label>
             </q-item-section>
-            <q-item-section side v-if="selectedSkills.includes(skill.name)">
+            <q-item-section side v-if="selectedSkills.includes(skill.nombre)">
               <q-icon name="check" color="primary" />
             </q-item-section>
           </q-item>
@@ -77,6 +77,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  skills: {
+    type: Array,
+    default: () => [],
+  }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -85,22 +89,11 @@ const emit = defineEmits(['update:modelValue'])
 const selectedSkillType = ref('Todos')
 const searchTerm = ref('')
 
-// --- Mock Data ---
-const skillTypes = ['Todos', 'Técnicos', 'Blandos']
-const allSkills = ref([
-  { id: 's1', name: 'Vue.js', type: 'Técnicos' },
-  { id: 's2', name: 'React', type: 'Técnicos' },
-  { id: 's3', name: 'Angular', type: 'Técnicos' },
-  { id: 's4', name: 'Node.js', type: 'Técnicos' },
-  { id: 's5', name: 'Python', type: 'Técnicos' },
-  { id: 's6', name: 'SQL', type: 'Técnicos' },
-  { id: 's7', name: 'Liderazgo', type: 'Blandos' },
-  { id: 's8', name: 'Comunicación', type: 'Blandos' },
-  { id: 's9', name: 'Trabajo en equipo', type: 'Blandos' },
-  { id: 's10', name: 'Resolución de problemas', type: 'Blandos' },
-  { id: 's11', name: 'Diseño UX', type: 'Técnicos' },
-  { id: 's12', name: 'Scrum', type: 'Blandos' },
-])
+// --- Dynamic Options ---
+const skillTypes = computed(() => {
+  const types = new Set(props.skills.map(s => s.type))
+  return ['Todos', ...Array.from(types)]
+})
 
 // --- Computed Properties ---
 const selectedSkills = computed({
@@ -111,10 +104,11 @@ const selectedSkills = computed({
 })
 
 const filteredSkills = computed(() => {
-  return allSkills.value.filter((skill) => {
+  if (!props.skills) return []
+  return props.skills.filter((skill) => {
     const typeMatch = selectedSkillType.value === 'Todos' || skill.type === selectedSkillType.value
     const searchTermMatch =
-      !searchTerm.value || skill.name.toLowerCase().includes(searchTerm.value.toLowerCase())
+      !searchTerm.value || skill.nombre.toLowerCase().includes(searchTerm.value.toLowerCase())
     return typeMatch && searchTermMatch
   })
 })

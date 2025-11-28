@@ -2,7 +2,7 @@
   <q-layout view="lHh lpr lFf" container style="height: calc(100vh - 150px)">
     <!-- Filtro de Skills (Drawer Izquierdo) -->
     <q-drawer v-model="skillFilterDrawerOpen" side="left" bordered show-if-above :width="300">
-      <SkillMappingFilter v-model="selectedSkills" class="full-height" />
+      <SkillMappingFilter v-model="selectedSkills" :skills="allSkills" class="full-height" />
     </q-drawer>
 
     <q-page-container>
@@ -15,7 +15,7 @@
           </div>
         </div>
 
-        <!-- FILTROS SUPERIORES (Colaborador) -->
+        <!-- FILTROS SUPERIORES -->
         <q-card class="q-mb-lg filter-bar-card">
           <q-card-section>
             <div class="row q-col-gutter-md items-center">
@@ -31,7 +31,7 @@
               </div>
 
               <!-- Buscador -->
-              <div class="col-12 col-sm-4 col-md">
+              <div class="col-12 col-md-4">
                 <label class="filter-label">Buscar Colaborador</label>
                 <q-input
                   outlined
@@ -47,33 +47,36 @@
               </div>
 
               <!-- Filtro Departamento -->
-              <div class="col-12 col-sm-3 col-md">
-                <label class="filter-label">Departamentos</label>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="filter-label">Departamento</label>
                 <q-select
                   outlined
                   dense
-                  v-model="filtroDepartamento"
+                  v-model="selectedDepartamento"
                   :options="departamentoOptions"
                   emit-value
                   map-options
+                  clearable
                 />
               </div>
 
-              <!-- Filtro Roles -->
-              <div class="col-12 col-sm-3 col-md">
-                <label class="filter-label">Roles</label>
+              <!-- Filtro Area -->
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="filter-label">Área</label>
                 <q-select
                   outlined
                   dense
-                  v-model="filtroRol"
-                  :options="rolOptions"
+                  v-model="selectedArea"
+                  :options="areaOptions"
                   emit-value
                   map-options
+                  clearable
+                  :disable="!selectedDepartamento"
                 />
               </div>
 
               <!-- Botón Limpiar -->
-              <div class="col-12 col-sm-2 col-md-auto text-right">
+              <div class="col-12 col-md-2 text-right">
                 <q-btn
                   flat
                   color="primary"
@@ -86,153 +89,157 @@
           </q-card-section>
         </q-card>
 
-        <q-card class="filter-card q-mt-md" flat
-          >1
-          <q-card-section v-if="selectedCollaborators.length > 0">
-            <div class="panel-subtitle text-weight-medium q-mb-sm">Colaboradores Seleccionados</div>
-            <div class="q-gutter-sm flex-row">
-              <q-chip
-                v-for="collaborator in selectedCollaborators"
-                :key="collaborator"
-                removable
-                @remove="toggleCollaborator(collaborator)"
-                color="primary"
-                text-color="white"
-                icon="check"
-              >
-                {{ collaborator }}
-              </q-chip>
-            </div>
-          </q-card-section>
-        </q-card>
-
         <!-- Lista de Colaboradores -->
-        <SkillMappingList :colaboradores="colaboradoresFiltrados" />
+        <div v-if="loading" class="text-center q-pa-xl">
+          <q-spinner-dots color="primary" size="40px" />
+          <p class="q-mt-md">Cargando colaboradores...</p>
+        </div>
+        <div v-else-if="error" class="text-center text-negative q-pa-xl">
+          <q-icon name="error_outline" size="40px" />
+          <p class="q-mt-md">Error al cargar los datos. Inténtalo de nuevo más tarde.</p>
+        </div>
+        <SkillMappingList v-else :colaboradores="colaboradoresFiltrados" />
       </q-page>
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { api } from 'boot/axios'
 import SkillMappingFilter from 'src/components/skillmapping/SkillMappingFilter.vue'
 import SkillMappingList from 'src/components/skillmapping/SkillMappingList.vue'
+
+// --- STATIC DATA for filters ---
+const departamentos = ref([
+  { id: 9, nombre: 'ADMINISTRACION' },
+  { id: 8, nombre: 'COMPRAS' },
+  { id: 4, nombre: 'FINANZAS' },
+  { id: 7, nombre: 'INVESTIGACIÓN' },
+  { id: 5, nombre: 'LOGISTICA' },
+  { id: 2, nombre: 'MARKETING' },
+  { id: 6, nombre: 'OPERACIONES' },
+  { id: 3, nombre: 'RRHH' },
+  { id: 1, nombre: 'TI' },
+])
+
+const areas = ref([
+  { id: 1, nombre: 'TI', departamentoId: 1 },
+  { id: 2, nombre: 'Desarrollo de Software', departamentoId: 1 },
+  { id: 3, nombre: 'Soporte Técnico', departamentoId: 1 },
+  { id: 4, nombre: 'Infraestructura y Redes', departamentoId: 1 },
+  { id: 5, nombre: 'Selección y Contratación', departamentoId: 3 },
+  { id: 6, nombre: 'Nóminas y Compensación', departamentoId: 3 },
+  { id: 7, nombre: 'Capacitación y Desarrollo', departamentoId: 3 },
+  { id: 8, nombre: 'Marketing Digital', departamentoId: 2 },
+  { id: 9, nombre: 'Redes Sociales', departamentoId: 2 },
+])
 
 // --- STATE ---
 const skillFilterDrawerOpen = ref(true)
 const searchTerm = ref('')
-const filtroDepartamento = ref('Todos')
-const filtroRol = ref('Todos')
 const selectedSkills = ref([])
+const loading = ref(true)
+const error = ref(null)
+const selectedDepartamento = ref(null)
+const selectedArea = ref(null)
+
+// --- API DATA ---
+const allSkills = ref([])
+const collaboratorsWithSkills = ref([])
+
+// --- FETCH DATA ---
+onMounted(async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+
+    // Fetch all data in parallel
+    const [skillsRes, collaboratorsRes] = await Promise.all([
+      api.get('/api/Skill'),
+      api.get('/api/Colaborador') // Assuming this returns collaborators with skills
+    ]);
+
+    // Process skills for the filter
+    const skillTypeMap = { 1: 'Hard Skill', 2: 'Soft Skill', 3: 'Idioma' };
+    allSkills.value = (skillsRes.data || []).map(skill => ({
+      ...skill,
+      type: skillTypeMap[skill.tipo] || 'Desconocido',
+    }));
+
+    // Process collaborators, mapping API properties to component properties
+    collaboratorsWithSkills.value = (collaboratorsRes.data || []).map(c => ({
+      ...c,
+      technicalSkills: c.habilidadesTecnicas || c.technicalSkills || [],
+      softSkills: c.habilidadesBlandas || c.softSkills || [],
+      languageSkills: c.idiomas || c.languageSkills || [],
+    }));
+
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    error.value = 'No se pudo cargar la información. Por favor, revise la conexión con la API.';
+  } finally {
+    loading.value = false;
+  }
+})
 
 // --- OPTIONS for filters ---
-const departamentoOptions = [
-  { label: 'Todos', value: 'Todos' },
-  { label: 'Tecnología', value: 'Tecnología' },
-  { label: 'Recursos Humanos', value: 'Recursos Humanos' },
-  { label: 'Marketing', value: 'Marketing' },
-]
+const departamentoOptions = computed(() =>
+  departamentos.value.map((d) => ({ label: d.nombre, value: d.id })),
+)
 
-const rolOptions = [
-  { label: 'Todos', value: 'Todos' },
-  { label: 'Project Manager', value: 'Project Manager' },
-  { label: 'Full Stack Developer', value: 'Full Stack Developer' },
-  { label: 'Data Scientist', value: 'Data Scientist' },
-  { label: 'HR Business Partner', value: 'HR Business Partner' },
-]
-
-// --- MOCK DATA ---
-const colaboradores = ref([
-  {
-    id: 1,
-    nombre: 'Juan Pérez',
-    departamento: 'Tecnología',
-    rol: 'Project Manager',
-    technicalSkills: ['Agile', 'Jira'],
-    softSkills: ['Liderazgo', 'Comunicación'],
-    lastUpdate: '15/10/2025',
-  },
-  {
-    id: 2,
-    nombre: 'Luis Chang',
-    departamento: 'Tecnología',
-    rol: 'Full Stack Developer',
-    technicalSkills: ['Vue.js', 'Node.js', 'SQL'],
-    softSkills: ['Trabajo en equipo'],
-    lastUpdate: '22/11/2025',
-  },
-  {
-    id: 3,
-    nombre: 'José Ballón',
-    departamento: 'Tecnología',
-    rol: 'Data Scientist',
-    technicalSkills: ['Python', 'SQL', 'Machine Learning', 'React'],
-    softSkills: ['Resolución de problemas'],
-    lastUpdate: '03/09/2025',
-  },
-  {
-    id: 4,
-    nombre: 'Ana Rojas',
-    departamento: 'Recursos Humanos',
-    rol: 'HR Business Partner',
-    technicalSkills: [],
-    softSkills: ['Comunicación', 'Empatía', 'Negociación'],
-    lastUpdate: '30/10/2025',
-  },
-  {
-    id: 5,
-    nombre: 'Carla Vidal',
-    departamento: 'Marketing',
-    rol: 'Digital Marketer',
-    technicalSkills: ['SEO', 'Google Analytics'],
-    softSkills: ['Creatividad', 'Comunicación'],
-    lastUpdate: '18/11/2025',
-  },
-])
+const areaOptions = computed(() => {
+  if (!selectedDepartamento.value) return []
+  return areas.value
+    .filter((area) => area.departamentoId === selectedDepartamento.value)
+    .map((area) => ({ label: area.nombre, value: area.id }))
+})
 
 // --- LOGIC ---
+watch(selectedDepartamento, () => {
+  selectedArea.value = null
+})
 
 const colaboradoresFiltrados = computed(() => {
-  return colaboradores.value.filter((c) => {
+  if (loading.value) return []
+
+  return (collaboratorsWithSkills.value || []).filter((c) => {
+    if (!c) return false
+
+    // Filter by Department
+    const depMatch = !selectedDepartamento.value || c.departamentoId === selectedDepartamento.value
+
+    // Filter by Area
+    const areaMatch = !selectedArea.value || c.areaId === selectedArea.value
+
     // Search Term Filter
     const searchTermLower = searchTerm.value.toLowerCase()
-    const nameMatch = c.nombre.toLowerCase().includes(searchTermLower)
-    const rolMatchSearch = c.rol.toLowerCase().includes(searchTermLower)
-    const searchMatch = nameMatch || rolMatchSearch
-
-    // Department Filter
-    const depMatch =
-      filtroDepartamento.value === 'Todos' || c.departamento === filtroDepartamento.value
-
-    // Role Filter
-    const rolMatch = filtroRol.value === 'Todos' || c.rol === filtroRol.value
+    const fullName = `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase()
+    const nameMatch = fullName.includes(searchTermLower)
+    const rolMatchSearch = c.rolNombre ? c.rolNombre.toLowerCase().includes(searchTermLower) : false
+    const searchMatch = !searchTerm.value || nameMatch || rolMatchSearch
 
     // Skills Filter
+    const skillsToMatch = [
+      ...(c.technicalSkills || []),
+      ...(c.softSkills || []),
+      ...(c.languageSkills || []),
+    ]
     const skillsMatch =
       selectedSkills.value.length === 0 ||
-      selectedSkills.value.every((skill) => [...c.technicalSkills, ...c.softSkills].includes(skill))
+      selectedSkills.value.every((skillName) =>
+        skillsToMatch.some((s) => s && s.nombre === skillName),
+      )
 
-    return searchMatch && depMatch && rolMatch && skillsMatch
+    return depMatch && areaMatch && searchMatch && skillsMatch
   })
 })
-const selectedCollaborators = ref([]) // Managing internally for now
 
 function clearFilters() {
   searchTerm.value = ''
-  filtroDepartamento.value = 'Todos'
-  filtroRol.value = 'Todos'
   selectedSkills.value = []
-}
-function toggleCollaborator(collaboratorName) {
-  const newSelection = [...selectedCollaborators.value]
-  const index = newSelection.indexOf(collaboratorName)
-
-  if (index === -1) {
-    newSelection.push(collaboratorName)
-  } else {
-    newSelection.splice(index, 1)
-  }
-  selectedCollaborators.value = newSelection
+  selectedDepartamento.value = null
+  selectedArea.value = null
 }
 </script>
 

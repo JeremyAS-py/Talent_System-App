@@ -13,7 +13,7 @@
     <div class="row q-col-gutter-lg">
       <div class="col-9">
         <!-- Componente de Gráfica -->
-        <brechas-chart />
+        <brechas-chart :rows="tableRows" />
       </div>
 
       <div class="col-3 column q-gutter-md justify-center">

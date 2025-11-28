@@ -321,7 +321,6 @@
             />
 
             <!-- Nivel (slider) -->
-            <!-- Nivel (slider) -->
             <div>
               <div class="text-subtitle2 q-mb-xs">Nivel</div>
               <q-slider
@@ -407,62 +406,47 @@
 <script>
 export default {
   name: 'RegisterColabForm',
-
   data() {
     return {
       // ===== FORMULARIO =====
       form: {
-        // Info personal
         dni: '',
         nombres: '',
         apellidos: '',
         correo: '',
         password: '',
-
-        // Info profesional
         departamentoId: null,
         rolId: null,
         areaId: null,
         fechaInicio: '',
         disponibleMovilidad: false,
-
-        // Skills y certificaciones (solo en UI por ahora)
         skills: [],
         certificaciones: [],
       },
-
       showPassword: true,
-
-      // Selects
       departamentoOptions: [],
       rolOptions: [],
       areaOptions: [],
       filteredAreaOptions: [],
-
-      // Catálogos para skills
-      skillCatalog: [], // [{ value, label, tipoSkillId, tipoSkillNombre }]
+      skillCatalog: [],
       skillOptions: [],
       tipoSkillOptions: [],
-      nivelOptions: [], // [{ value, label }]
-
-      // Dialog Skill
+      nivelOptions: [],
       skillDialog: {
         open: false,
-        mode: 'new', // 'new' | 'edit'
+        mode: 'new',
         editIndex: -1,
         form: {
           skillId: null,
           nombre: '',
           tipoSkillId: null,
           categoria: '',
-          sliderValue: 0, // 👈 Arranca en Principiante
+          sliderValue: 0,
           nivelId: null,
           nivelNombre: '',
           aniosExp: '',
         },
       },
-
-      // Dialog Certificación
       certDialog: {
         open: false,
         mode: 'new',
@@ -475,9 +459,7 @@ export default {
       },
     }
   },
-
   computed: {
-    // ===== VALIDACIONES =====
     dniValid() {
       return /^[0-9]{8}$/.test(this.form.dni)
     },
@@ -504,7 +486,6 @@ export default {
       return this.personalValid && this.profesionalValid
     },
   },
-
   watch: {
     'form.departamentoId'(newDept) {
       if (!newDept) {
@@ -512,12 +493,10 @@ export default {
         return
       }
       this.filteredAreaOptions = this.areaOptions.filter((a) => a.departamentoId === newDept)
-
       if (this.form.areaId && !this.filteredAreaOptions.some((a) => a.value === this.form.areaId)) {
         this.form.areaId = null
       }
     },
-
     'form.areaId'(newArea) {
       if (!newArea) return
       const area = this.areaOptions.find((a) => a.value === newArea)
@@ -526,47 +505,34 @@ export default {
       }
     },
   },
-
   async mounted() {
     await this.cargarCombos()
   },
-
   methods: {
     resetForm() {
       this.form = {
-        // Info personal
         dni: '',
         nombres: '',
         apellidos: '',
         correo: '',
         password: '',
-
-        // Info profesional
         departamentoId: null,
         rolId: null,
         areaId: null,
         fechaInicio: '',
         disponibleMovilidad: false,
-
-        // Skills y certificaciones
         skills: [],
         certificaciones: [],
       }
-
-      // reset extras
       this.showPassword = true
       this.skillDialog.open = false
       this.certDialog.open = false
     },
     onDniInput() {
-      // Solo números, máximo 8
       this.form.dni = (this.form.dni || '').replace(/\D/g, '').slice(0, 8)
     },
-
     async cargarCombos() {
       const api = this.$api
-
-      // Hago las peticiones en paralelo
       try {
         const [rolesRes, deptRes, areaRes, skillRes, tipoRes, nivelRes] = await Promise.all([
           api.get('/api/Rol'),
@@ -577,19 +543,16 @@ export default {
           api.get('/api/Nivel/niveles'),
         ])
 
-        // ROL
         this.rolOptions = (rolesRes.data ?? []).map((r) => ({
           label: r.nombre ?? r.Nombre,
           value: r.rolId ?? r.RolId,
         }))
 
-        // DEPARTAMENTO
         this.departamentoOptions = (deptRes.data ?? []).map((d) => ({
           label: d.nombre ?? d.Nombre,
           value: d.departamentoId ?? d.DepartamentoId,
         }))
 
-        // AREA
         this.areaOptions = (areaRes.data ?? []).map((a) => ({
           label: a.nombre ?? a.Nombre,
           value: a.areaId ?? a.AreaId,
@@ -597,7 +560,6 @@ export default {
         }))
         this.filteredAreaOptions = [...this.areaOptions]
 
-        // SKILL CATALOGO
         this.skillCatalog = (skillRes.data ?? []).map((s) => ({
           value: s.skillId ?? s.SkillId,
           label: s.nombre ?? s.Nombre,
@@ -606,13 +568,11 @@ export default {
         }))
         this.skillOptions = this.skillCatalog.map((s) => ({ value: s.value, label: s.label }))
 
-        // TIPOSKILL
         this.tipoSkillOptions = (tipoRes.data ?? []).map((t) => ({
           value: t.tipoSkillId ?? t.TipoSkillId,
           label: t.nombre ?? t.Nombre,
         }))
 
-        // NIVELES
         this.nivelOptions = (nivelRes.data ?? []).map((n) => ({
           value: n.nivelId ?? n.NivelId,
           label: n.nombre ?? n.Nombre,
@@ -622,8 +582,6 @@ export default {
         console.error('Error cargando combos:', e)
       }
     },
-
-    // ========== SKILLS ==========
     openSkillDialogForNew() {
       this.skillDialog.mode = 'new'
       this.skillDialog.editIndex = -1
@@ -632,19 +590,16 @@ export default {
         nombre: '',
         tipoSkillId: null,
         categoria: '',
-        sliderValue: 0, // 👈 aquí pon 0
+        sliderValue: 0,
         nivelId: null,
         nivelNombre: '',
         aniosExp: '',
       }
       this.skillDialog.open = true
     },
-
     openSkillDialogForEdit(index) {
       const s = this.form.skills[index]
       if (!s) return
-
-      // Buscar índice del nivel para el slider
       let sliderValue = 1
       const nivelIndex = this.nivelOptions.findIndex((n) => n.value === s.nivelId)
       if (nivelIndex >= 0) sliderValue = nivelIndex
@@ -663,38 +618,25 @@ export default {
       }
       this.skillDialog.open = true
     },
-
     onSkillSelected(skillId) {
       const selected = this.skillCatalog.find((s) => s.value === skillId)
       if (!selected) return
-
       this.skillDialog.form.nombre = selected.label
       this.skillDialog.form.tipoSkillId = selected.tipoSkillId
       this.skillDialog.form.categoria = selected.tipoSkillNombre
     },
-
     onConfirmSkill() {
-      // Validaciones básicas
       if (!this.skillDialog.form.skillId) {
-        this.$q.notify({
-          type: 'warning',
-          message: 'Selecciona un skill.',
-        })
+        this.$q.notify({ type: 'warning', message: 'Selecciona un skill.' })
         return
       }
       if (!this.skillDialog.form.tipoSkillId) {
-        this.$q.notify({
-          type: 'warning',
-          message: 'Selecciona una categoría.',
-        })
+        this.$q.notify({ type: 'warning', message: 'Selecciona una categoría.' })
         return
       }
 
       const nivelIndex = this.skillDialog.form.sliderValue || 0
-      const nivelInfo = this.nivelOptions[nivelIndex] || {
-        value: null,
-        label: '',
-      }
+      const nivelInfo = this.nivelOptions[nivelIndex] || { value: null, label: '' }
 
       const skillData = {
         skillId: this.skillDialog.form.skillId,
@@ -716,7 +658,6 @@ export default {
 
       this.skillDialog.open = false
     },
-
     onDeleteSkill(index) {
       this.$q
         .dialog({
@@ -729,8 +670,6 @@ export default {
           this.form.skills.splice(index, 1)
         })
     },
-
-    // ========== CERTIFICACIONES ==========
     openCertDialogForNew() {
       this.certDialog.mode = 'new'
       this.certDialog.editIndex = -1
@@ -741,11 +680,9 @@ export default {
       }
       this.certDialog.open = true
     },
-
     openCertDialogForEdit(index) {
       const c = this.form.certificaciones[index]
       if (!c) return
-
       this.certDialog.mode = 'edit'
       this.certDialog.editIndex = index
       this.certDialog.form = {
@@ -755,7 +692,6 @@ export default {
       }
       this.certDialog.open = true
     },
-
     onConfirmCert() {
       if (!this.certDialog.form.nombre) {
         this.$q.notify({
@@ -779,7 +715,6 @@ export default {
 
       this.certDialog.open = false
     },
-
     onDeleteCert(index) {
       this.$q
         .dialog({
@@ -792,8 +727,6 @@ export default {
           this.form.certificaciones.splice(index, 1)
         })
     },
-
-    // ========== SUBMIT ==========
     async onSubmit() {
       if (!this.formValid) {
         this.$q.notify({
@@ -805,7 +738,6 @@ export default {
       }
 
       const api = this.$api
-
       const payloadColaborador = {
         nombres: this.form.nombres,
         apellidos: this.form.apellidos,
@@ -824,21 +756,16 @@ export default {
         const colaboradorCreado = res.data
         const colaboradorId = colaboradorCreado.colaboradorId ?? colaboradorCreado.ColaboradorId
 
-        // Registrar skills
         if (this.form.skills.length) {
           await this.$api.post(`/api/ColaboradorSkill/${colaboradorId}/skills`, this.form.skills)
         }
 
-        // Registrar certificaciones
         if (this.form.certificaciones.length) {
           await this.$api.post(
             `/api/ColaboradorCertificacion/${colaboradorId}`,
             this.form.certificaciones,
           )
         }
-
-        // TODO: aquí luego llamas a ColaboradorSkill y ColaboradorCertificacion
-        // usando this.form.skills y this.form.certificaciones
 
         this.$q.notify({
           type: 'positive',
@@ -871,10 +798,10 @@ export default {
 /* HEADER */
 .header {
   background-color: #2469bc;
-  height: 140px;
   display: flex;
   align-items: center;
   box-sizing: border-box;
+  padding: 24px 0; /* sin height fija, se centra solo */
 }
 
 .header-inner {
@@ -883,21 +810,29 @@ export default {
   margin: 0 auto;
   padding: 0 32px;
   display: flex;
-  align-items: center;
+  align-items: center; /* centra verticalmente texto e icono */
   justify-content: space-between;
   color: #ffffff;
+  min-height: 96px; /* da cuerpo al header pero sigue siendo flexible */
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
 }
 
 .back-btn {
   background: #ffffff;
   color: #2469bc;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+
+/* bloque de texto centrado verticalmente con el icono */
+.header-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .header-text h1 {
@@ -913,6 +848,7 @@ export default {
 
 .header-people-icon {
   color: #ffffff;
+  flex-shrink: 0; /* que no se deforme */
 }
 
 /* MAIN */

@@ -395,98 +395,147 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { api } from 'boot/axios'
 
 const $q = useQuasar()
 
-// ==== MOCK DATA (EN LÍNEA CON TU BD) ====
-const departamentos = [
-  { id: 1, nombre: 'Tecnología' },
-  { id: 2, nombre: 'Recursos Humanos' }
-]
+// ======= CATALOGOS DESDE API =======
+const departamentos = ref([])   // /api/departamento
+const areas = ref([])           // /api/area/areas
+const cuentas = ref([])         // /api/cuenta/cuentas
+const proyectos = ref([])       // /api/proyecto/proyectos
+const roles = ref([])           // /api/perfil/perfiles (Perfil = Rol estándar)
+const urgencias = ref([])       // /api/urgencia/urgencias
+const dbSkills = ref([])        // /api/skill
+const niveles = ref([])         // /api/niveldominio
+const loadingCatalogos = ref(false)
 
-const areas = [
-  { id: 1, nombre: 'Desarrollo Backend', depId: 1 },
-  { id: 2, nombre: 'Desarrollo Frontend', depId: 1 },
-  { id: 3, nombre: 'Arquitectura', depId: 1 },
-  { id: 4, nombre: 'Selección', depId: 2 }
-]
-
-const cuentas = [
-  { id: 1, nombre: 'BBVA' },
-  { id: 2, nombre: 'Interbank' },
-  { id: 3, nombre: 'Claro' }
-]
-
-const proyectos = [
-  { id: 1, nombre: 'Proyecto DataHub', cuentaId: 1 },
-  { id: 2, nombre: 'Proyecto Modernización Legacy', cuentaId: 1 },
-  { id: 3, nombre: 'Proyecto CRM360', cuentaId: 2 },
-  { id: 4, nombre: 'Proyecto Retail Analytics', cuentaId: 3 }
-]
-
-const roles = [
-  { id: 1, nombre: 'Backend Developer Sr' },
-  { id: 2, nombre: 'Frontend Developer' },
-  { id: 3, nombre: 'Data Engineer' }
-]
-
-const urgencias = [
-  { id: 1, nombre: 'Baja' },
-  { id: 2, nombre: 'Media' },
-  { id: 3, nombre: 'Alta' }
-]
-
-const niveles = [
-  { id: 1, nombre: 'Inicial' },
-  { id: 2, nombre: 'Intermedio' },
-  { id: 3, nombre: 'Avanzado' }
-]
-
-const dbSkills = [
-  { id: 1, nombre: 'Node.js', typeId: 1 },
-  { id: 2, nombre: 'SQL', typeId: 1 },
-  { id: 3, nombre: 'Vue.js', typeId: 1 },
-  { id: 4, nombre: 'Comunicación', typeId: 2 },
-  { id: 5, nombre: 'Liderazgo', typeId: 2 }
-]
-
-// ==== STATE ====
+// ==== STATE FORM ====
 const form = ref({
   cuenta: null,
   proyecto: null,
   titulo: '',
   departamento: null,
   area: null,
-  rol: null,
-  urgencia: urgencias[1], // Media
+  rol: null,          // Perfil
+  urgencia: null,
   fechaInicio: '',
-  skills: []   // { nombre, nivel, tipoImportancia, esTecnico }
+  skills: []          // { id, nombre, nivel, nivelId, esTecnico, tipoImportancia, peso, critico }
 })
 
 const skillModalOpen = ref(false)
 const newSkill = ref({
   esTecnico: true,
   skillObj: null,
-  nivel: niveles[1],
+  nivel: null,
   tipoImportancia: 'Primario'
 })
 
-// ==== COMPUTED (CASCADAS) ====
+// ======= CARGA INICIAL DE CATALOGOS =======
+const loadCatalogos = async () => {
+  try {
+    loadingCatalogos.value = true
+
+    const [
+      depRes,
+      areaRes,
+      cuentaRes,
+      proyectoRes,
+      perfilRes,
+      urgenciaRes,
+      skillRes,
+      nivelRes
+    ] = await Promise.all([
+      api.get('/api/departamento'),
+      api.get('/api/area/areas'),
+      api.get('/api/cuenta/cuentas'),
+      api.get('/api/proyecto/proyectos'),
+      api.get('/api/perfil/perfiles'),
+      api.get('/api/urgencia/urgencias'),
+      api.get('/api/skill'),
+      api.get('/api/niveldominio')
+    ])
+
+    departamentos.value = depRes.data.map(d => ({
+      id: d.departamentoId,
+      nombre: d.nombre
+    }))
+
+    areas.value = areaRes.data.map(a => ({
+      id: a.areaId,
+      nombre: a.nombre,
+      departamentoId: a.departamentoId
+    }))
+
+    cuentas.value = cuentaRes.data.map(c => ({
+      id: c.cuentaId,
+      nombre: c.nombre
+    }))
+
+    proyectos.value = proyectoRes.data.map(p => ({
+      id: p.proyectoId,
+      nombre: p.nombre,
+      cuentaId: p.cuentaId
+    }))
+
+    roles.value = perfilRes.data.map(p => ({
+      id: p.perfilId,
+      nombre: p.nombre
+    }))
+
+    urgencias.value = urgenciaRes.data.map(u => ({
+      id: u.urgenciaId,
+      nombre: u.nombre
+    }))
+
+    dbSkills.value = skillRes.data.map(s => ({
+      id: s.skillId,
+      nombre: s.nombre,
+      tipoSkillId: s.tipoSkillId,   // 1 = técnico, 2 = blando (asumido)
+      critico: s.critico
+    }))
+
+    niveles.value = nivelRes.data.map(n => ({
+      id: n.nivelId,
+      nombre: n.nombre
+    }))
+
+    // Urgencia por defecto: Media si existe, si no la primera
+    if (!form.value.urgencia && urgencias.value.length > 0) {
+      const media = urgencias.value.find(u => u.nombre === 'Media')
+      form.value.urgencia = media || urgencias.value[0]
+    }
+  } catch (error) {
+    console.error(error)
+    $q.notify({
+      type: 'negative',
+      message: 'Error cargando catálogos de vacantes.'
+    })
+  } finally {
+    loadingCatalogos.value = false
+  }
+}
+
+onMounted(() => {
+  loadCatalogos()
+})
+
+// ======= COMPUTED (CASCADAS) =======
 const filteredAreas = computed(() => {
   if (!form.value.departamento) return []
-  return areas.filter(a => a.depId === form.value.departamento.id)
+  return areas.value.filter(a => a.departamentoId === form.value.departamento.id)
 })
 
 const filteredProyectos = computed(() => {
   if (!form.value.cuenta) return []
-  return proyectos.filter(p => p.cuentaId === form.value.cuenta.id)
+  return proyectos.value.filter(p => p.cuentaId === form.value.cuenta.id)
 })
 
 const availableSkillsFiltered = computed(() => {
   const typeNeeded = newSkill.value.esTecnico ? 1 : 2
-  return dbSkills.filter(s => s.typeId === typeNeeded)
+  return dbSkills.value.filter(s => s.tipoSkillId === typeNeeded)
 })
 
 const primarySkills = computed(() =>
@@ -497,7 +546,7 @@ const secondarySkills = computed(() =>
   form.value.skills.filter(s => s.tipoImportancia === 'Secundario')
 )
 
-// ==== HELPERS ====
+// ======= HELPERS =======
 const resetArea = () => { form.value.area = null }
 const resetProyecto = () => { form.value.proyecto = null }
 
@@ -513,12 +562,12 @@ const getSkillColor = (importance) => {
   return 'purple'
 }
 
-// ==== SKILLS ====
+// ======= SKILLS =======
 const openSkillModal = () => {
   newSkill.value = {
     esTecnico: true,
     skillObj: null,
-    nivel: niveles[1],
+    nivel: niveles.value[1] || niveles.value[0] || null, // por defecto Intermedio si existe
     tipoImportancia: 'Primario'
   }
   skillModalOpen.value = true
@@ -531,13 +580,25 @@ const addSkill = () => {
     ? newSkill.value.tipoImportancia
     : 'Soft Skill'
 
+  const peso =
+    importanciaFinal === 'Primario'
+      ? 2
+      : 1
+
+  const critico =
+    newSkill.value.esTecnico && newSkill.value.tipoImportancia === 'Primario'
+
   form.value.skills.push({
-    id: newSkill.value.skillObj.id,
+    id: newSkill.value.skillObj.id,           // SkillId
     nombre: newSkill.value.skillObj.nombre,
     nivel: newSkill.value.nivel.nombre,
+    nivelId: newSkill.value.nivel.id,        // NivelDeseado
     esTecnico: newSkill.value.esTecnico,
-    tipoImportancia: importanciaFinal
+    tipoImportancia: importanciaFinal,
+    peso,
+    critico
   })
+
   skillModalOpen.value = false
 }
 
@@ -545,8 +606,8 @@ const removeSkill = (index) => {
   form.value.skills.splice(index, 1)
 }
 
-// ==== GUARDADO ====
-const saveVacancy = () => {
+// ======= GUARDADO: POST /api/vacante =======
+const saveVacancy = async () => {
   if (!form.value.titulo || !form.value.rol || form.value.skills.length === 0) {
     $q.notify({
       type: 'negative',
@@ -555,8 +616,45 @@ const saveVacancy = () => {
     return
   }
 
-  console.log('Payload para API:', form.value)
-  $q.notify({ type: 'positive', message: 'Vacante registrada exitosamente' })
+  const skillsPayload = form.value.skills.map(s => ({
+    SkillId: s.id,
+    NivelDeseado: s.nivelId,
+    Peso: s.peso,
+    Critico: s.critico
+  }))
+
+  const payload = {
+    Titulo: form.value.titulo,
+    PerfilId: form.value.rol.id,
+    CuentaId: form.value.cuenta ? form.value.cuenta.id : null,
+    ProyectoId: form.value.proyecto ? form.value.proyecto.id : null,
+    FechaInicio: form.value.fechaInicio || new Date().toISOString().substring(0, 10),
+    UrgenciaId: form.value.urgencia ? form.value.urgencia.id : 1,
+    Estado: 'Abierta',
+    Descripcion: '',
+    Skills: skillsPayload
+  }
+
+  try {
+    console.log('Payload para API:', payload)
+    await api.post('/api/vacante', payload)
+    $q.notify({
+      type: 'positive',
+      message: 'Vacante registrada exitosamente.'
+    })
+
+    // Si quieres, aquí puedes limpiar el formulario:
+    // form.value = { ... }
+  } catch (error) {
+    console.error(error)
+    const msg =
+      error.response?.data?.message ||
+      'Error al registrar la vacante en el servidor.'
+    $q.notify({
+      type: 'negative',
+      message: msg
+    })
+  }
 }
 </script>
 

@@ -4,7 +4,14 @@
     <header class="header">
       <div class="header-inner">
         <div class="header-left">
-          <q-btn flat round dense icon="arrow_back" class="back-btn" @click="$router.back()" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="arrow_back"
+            class="back-btn"
+            @click="$router.back()"
+          />
           <div class="header-text">
             <h1>Registro de nuevo Colaborador</h1>
             <p>Movilidad interna inteligente basada en skills</p>
@@ -178,7 +185,11 @@
               </div>
 
               <div v-else class="skills-table-body">
-                <div v-for="(skill, index) in form.skills" :key="index" class="skills-table-row">
+                <div
+                  v-for="(skill, index) in form.skills"
+                  :key="index"
+                  class="skills-table-row"
+                >
                   <div class="cell main">
                     <span>{{ skill.nombre }}</span>
                   </div>
@@ -524,19 +535,24 @@ export default {
   },
 
   watch: {
-    'form.departamentoId'(newDept) {
+    'form.departamentoId': function (newDept) {
       if (!newDept) {
         this.filteredAreaOptions = [...this.areaOptions]
         return
       }
-      this.filteredAreaOptions = this.areaOptions.filter((a) => a.departamentoId === newDept)
+      this.filteredAreaOptions = this.areaOptions.filter(
+        (a) => a.departamentoId === newDept
+      )
 
-      if (this.form.areaId && !this.filteredAreaOptions.some((a) => a.value === this.form.areaId)) {
+      if (
+        this.form.areaId &&
+        !this.filteredAreaOptions.some((a) => a.value === this.form.areaId)
+      ) {
         this.form.areaId = null
       }
     },
 
-    'form.areaId'(newArea) {
+    'form.areaId': function (newArea) {
       if (!newArea) return
       const area = this.areaOptions.find((a) => a.value === newArea)
       if (area && area.departamentoId && this.form.departamentoId !== area.departamentoId) {
@@ -617,7 +633,10 @@ export default {
           tipoSkillId: s.tipoSkillId ?? s.TipoSkillId ?? null,
           tipoSkillNombre: s.tipoSkillNombre ?? s.TipoSkillNombre ?? '',
         }))
-        this.skillOptions = this.skillCatalog.map((s) => ({ value: s.value, label: s.label }))
+        this.skillOptions = this.skillCatalog.map((s) => ({
+          value: s.value,
+          label: s.label,
+        }))
 
         // TIPOSKILL
         this.tipoSkillOptions = (tipoRes.data ?? []).map((t) => ({
@@ -720,8 +739,8 @@ export default {
         nombre: this.skillDialog.form.nombre,
         tipoSkillId: this.skillDialog.form.tipoSkillId,
         categoria:
-          this.tipoSkillOptions.find((t) => t.value === this.skillDialog.form.tipoSkillId)?.label ||
-          this.skillDialog.form.categoria,
+          this.tipoSkillOptions.find((t) => t.value === this.skillDialog.form.tipoSkillId)
+            ?.label || this.skillDialog.form.categoria,
         nivelId: nivelInfo.value,
         nivelNombre: nivelInfo.label,
         aniosExp: this.skillDialog.form.aniosExp,
@@ -810,19 +829,6 @@ export default {
       this.certDialog.open = false
     },
 
-    onDeleteCert(index) {
-      this.$q
-        .dialog({
-          title: 'Confirmar',
-          message: '¿Seguro que deseas eliminar esta certificación?',
-          cancel: true,
-          persistent: true,
-        })
-        .onOk(() => {
-          this.form.certificaciones.splice(index, 1)
-        })
-    },
-
     // ========== SUBMIT ==========
     async onSubmit() {
       if (!this.formValid) {
@@ -853,11 +859,15 @@ export default {
         // 1) Crear colaborador
         const res = await api.post('/api/Colaborador', payloadColaborador)
         const colaboradorCreado = res.data
-        const colaboradorId = colaboradorCreado.colaboradorId ?? colaboradorCreado.ColaboradorId
+        const colaboradorId =
+          colaboradorCreado.colaboradorId ?? colaboradorCreado.ColaboradorId
 
         // 2) Registrar skills
         if (this.form.skills.length) {
-          await api.post(/api/ColaboradorSkill/${colaboradorId}/skills, this.form.skills)
+          await api.post(
+            `/api/ColaboradorSkill/${colaboradorId}/skills`,
+            this.form.skills
+          )
         }
 
         // 3) Registrar certificaciones (solo campos que el backend necesita)
@@ -867,7 +877,10 @@ export default {
             fechaObtencion: c.fechaObtencion,
           }))
 
-          await api.post(/api/ColaboradorCertificacion/${colaboradorId}, certPayload)
+          await api.post(
+            `/api/ColaboradorCertificacion/${colaboradorId}`,
+            certPayload
+          )
         }
 
         this.$q.notify({

@@ -1,13 +1,11 @@
 <template>
   <q-layout view="lHh lpr lFf" container style="height: calc(100vh - 150px)">
-    <!-- Filtro de Skills (Drawer Izquierdo) -->
     <q-drawer v-model="skillFilterDrawerOpen" side="left" bordered show-if-above :width="300">
       <SkillMappingFilter v-model="selectedSkills" :skills="allSkills" class="full-height" />
     </q-drawer>
 
     <q-page-container>
       <q-page class="q-pa-lg">
-        <!-- TITULO + DESCRIPCIÓN -->
         <div class="q-mb-xl">
           <div class="page-title">Skill Mapping</div>
           <div class="page-subtitle">
@@ -15,11 +13,9 @@
           </div>
         </div>
 
-        <!-- FILTROS SUPERIORES -->
         <q-card class="q-mb-lg filter-bar-card">
           <q-card-section>
             <div class="row q-col-gutter-md items-center">
-              <!-- Botón para toggle drawer en mobile -->
               <div class="col-auto lt-lg">
                 <q-btn
                   flat
@@ -30,7 +26,6 @@
                 />
               </div>
 
-              <!-- Buscador -->
               <div class="col-12 col-md-4">
                 <label class="filter-label">Buscar Colaborador</label>
                 <q-input
@@ -47,7 +42,6 @@
                 </q-input>
               </div>
 
-              <!-- Filtro Departamento -->
               <div class="col-12 col-sm-6 col-md-3">
                 <label class="filter-label">Departamento</label>
                 <q-select
@@ -61,7 +55,6 @@
                 />
               </div>
 
-              <!-- Filtro Area -->
               <div class="col-12 col-sm-6 col-md-3">
                 <label class="filter-label">Área</label>
                 <q-select
@@ -76,7 +69,6 @@
                 />
               </div>
 
-              <!-- Botón Limpiar -->
               <div class="col-12 col-md-2 text-right">
                 <q-btn
                   flat
@@ -90,18 +82,20 @@
           </q-card-section>
         </q-card>
 
-        <!-- Lista de Colaboradores -->
         <div v-if="loading" class="text-center q-pa-xl">
           <q-spinner-dots color="primary" size="40px" />
           <p class="q-mt-md">Cargando colaboradores...</p>
         </div>
         <div v-else-if="error" class="text-center text-negative q-pa-xl">
           <q-icon name="error_outline" size="40px" />
-          <p class="q-mt-md">Error al cargar los datos. Inténtalo de nuevo más tarde.</p>
+          <p class="q-mt-md">{{ error }}</p>
         </div>
-        <SkillMappingList v-else :colaboradores="paginatedColaboradores" :search-term="searchTerm" />
+        <SkillMappingList
+          v-else
+          :colaboradores="paginatedColaboradores"
+          :search-term="searchTerm"
+        />
 
-        <!-- Paginación -->
         <div v-if="pageCount > 1" class="flex flex-center q-mt-lg">
           <q-pagination
             v-model="currentPage"
@@ -123,30 +117,9 @@ import { api } from 'boot/axios'
 import SkillMappingFilter from 'src/components/skillmapping/SkillMappingFilter.vue'
 import SkillMappingList from 'src/components/skillmapping/SkillMappingList.vue'
 
-// --- STATIC DATA for filters ---
-const departamentos = ref([
-  { id: 9, nombre: 'ADMINISTRACION' },
-  { id: 8, nombre: 'COMPRAS' },
-  { id: 4, nombre: 'FINANZAS' },
-  { id: 7, nombre: 'INVESTIGACIÓN' },
-  { id: 5, nombre: 'LOGISTICA' },
-  { id: 2, nombre: 'MARKETING' },
-  { id: 6, nombre: 'OPERACIONES' },
-  { id: 3, nombre: 'RRHH' },
-  { id: 1, nombre: 'TI' },
-])
-
-const areas = ref([
-  { id: 1, nombre: 'TI', departamentoId: 1 },
-  { id: 2, nombre: 'Desarrollo de Software', departamentoId: 1 },
-  { id: 3, nombre: 'Soporte Técnico', departamentoId: 1 },
-  { id: 4, nombre: 'Infraestructura y Redes', departamentoId: 1 },
-  { id: 5, nombre: 'Selección y Contratación', departamentoId: 3 },
-  { id: 6, nombre: 'Nóminas y Compensación', departamentoId: 3 },
-  { id: 7, nombre: 'Capacitación y Desarrollo', departamentoId: 3 },
-  { id: 8, nombre: 'Marketing Digital', departamentoId: 2 },
-  { id: 9, nombre: 'Redes Sociales', departamentoId: 2 },
-])
+// --- DYNAMIC DATA for filters ---
+const departamentos = ref([])
+const areas = ref([])
 
 // --- STATE ---
 const skillFilterDrawerOpen = ref(true)
@@ -165,30 +138,44 @@ const itemsPerPage = ref(8) // 8 items per page
 const allSkills = ref([])
 const collaboratorsWithSkills = ref([])
 
-// --- FETCH DATA (Corregido) ---
+// --- FETCH DATA ---
 onMounted(async () => {
   try {
     loading.value = true
     error.value = null
 
-    // Fetch all data in parallel
-    const [skillsRes, collaboratorsRes] = await Promise.all([
+    const results = await Promise.allSettled([
       api.get('/api/Skill'),
       api.get('/api/Colaborador'),
+      api.get('/api/Departamento'),
+      api.get('/api/Area/areas'),
     ])
 
-    // 1. Process allSkills (CORRECCIÓN: Usar tipoSkillId)
-    const skillTypeMap = { 1: 'Hard Skill', 2: 'Soft Skill', 3: 'Idioma' }
+    const [skillsRes, collaboratorsRes, departamentosRes, areasRes] = results
+    const errors = []
 
-    allSkills.value = (skillsRes.data || []).map((skill) => ({
+    if (skillsRes.status === 'rejected') errors.push('skills')
+    if (collaboratorsRes.status === 'rejected') errors.push('colaboradores')
+    if (departamentosRes.status === 'rejected') errors.push('departamentos')
+    if (areasRes.status === 'rejected') errors.push('áreas')
+
+    if (errors.length > 0) {
+      throw new Error(`Error al cargar datos de: ${errors.join(', ')}`)
+    }
+
+    // 1. Process Departments and Areas
+    departamentos.value = departamentosRes.value.data || []
+    areas.value = areasRes.value.data || []
+
+    // 2. Process allSkills
+    const skillTypeMap = { 1: 'Hard Skill', 2: 'Soft Skill', 3: 'Idioma' }
+    allSkills.value = (skillsRes.value.data || []).map((skill) => ({
       ...skill,
-      // AHORA USAMOS 'tipoSkillId' en lugar de 'tipo'
       type: skillTypeMap[skill.tipoSkillId] || 'Desconocido',
     }))
 
     // Create a map for quick lookup by skill name to get its ID/Type
     const skillLookup = allSkills.value.reduce((acc, skill) => {
-      // Aseguramos que la clave es el nombre del skill en minúsculas
       acc[skill.nombre.toLowerCase()] = {
         id: skill.skillId,
         type: skill.type,
@@ -197,20 +184,16 @@ onMounted(async () => {
       return acc
     }, {})
 
-    // 2. Process collaborators
-    collaboratorsWithSkills.value = (collaboratorsRes.data || []).map((c) => {
+    // 3. Process collaborators
+    collaboratorsWithSkills.value = (collaboratorsRes.value.data || []).map((c) => {
       const technicalSkills = []
       const softSkills = []
       const languageSkills = []
-
-      // La propiedad 'skills' viene de la API del colaborador
       ;(c.skills || []).forEach((skillName) => {
         const skillNameLower = skillName.toLowerCase()
         const detail = skillLookup[skillNameLower]
-
         if (detail) {
           const skillObject = { id: detail.id, nombre: detail.nombre }
-
           if (detail.type === 'Hard Skill') {
             technicalSkills.push(skillObject)
           } else if (detail.type === 'Soft Skill') {
@@ -221,9 +204,11 @@ onMounted(async () => {
         }
       })
 
+      // **CORRECCIÓN DE TIPADO APLICADA AQUÍ**
       return {
         ...c,
-        // Mapeamos los nombres de los props a los arrays generados
+        departamentoId: c.departamentoId ? Number(c.departamentoId) : null,
+        areaId: c.areaId ? Number(c.areaId) : null,
         technicalSkills: technicalSkills,
         softSkills: softSkills,
         languageSkills: languageSkills,
@@ -231,27 +216,38 @@ onMounted(async () => {
     })
   } catch (err) {
     console.error('Error fetching data:', err)
-    error.value = 'No se pudo cargar la información. Por favor, revise la conexión con la API.'
+    error.value =
+      err.message || 'No se pudo cargar la información. Por favor, revise la conexión con la API.'
   } finally {
     loading.value = false
   }
 })
-// --- FIN DEL FETCH DATA CORREGIDO ---
 
 // --- OPTIONS for filters ---
 const departamentoOptions = computed(() =>
-  departamentos.value.map((d) => ({ label: d.nombre, value: d.id })),
+  // **CORRECCIÓN DE TIPADO APLICADA AQUÍ**
+  (departamentos.value || []).map((d) => ({
+    label: d.nombre,
+    value: Number(d.departamentoId),
+  })),
 )
 
 const areaOptions = computed(() => {
   if (!selectedDepartamento.value) return []
-  return areas.value
-    .filter((area) => area.departamentoId === selectedDepartamento.value)
-    .map((area) => ({ label: area.nombre, value: area.id }))
+  return (
+    (areas.value || [])
+      .filter((area) => Number(area.departamentoId) === selectedDepartamento.value)
+      // **CORRECCIÓN DE TIPADO APLICADA AQUÍ**
+      .map((area) => ({
+        label: area.nombre,
+        value: Number(area.areaId),
+      }))
+  )
 })
 
 // --- LOGIC ---
 watch(selectedDepartamento, () => {
+  // Reset selected area when department changes
   selectedArea.value = null
 })
 
@@ -261,20 +257,20 @@ const colaboradoresFiltrados = computed(() => {
   return (collaboratorsWithSkills.value || []).filter((c) => {
     if (!c) return false
 
-    // Filter by Department
+    // 1. Filter by Department (Compara ID numérico con ID numérico)
     const depMatch = !selectedDepartamento.value || c.departamentoId === selectedDepartamento.value
 
-    // Filter by Area
+    // 2. Filter by Area (Compara ID numérico con ID numérico)
     const areaMatch = !selectedArea.value || c.areaId === selectedArea.value
 
-    // Search Term Filter
+    // 3. Search Term Filter
     const searchTermLower = searchTerm.value.toLowerCase()
     const fullName = `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase()
     const nameMatch = fullName.includes(searchTermLower)
     const rolMatchSearch = c.rolNombre ? c.rolNombre.toLowerCase().includes(searchTermLower) : false
     const searchMatch = !searchTerm.value || nameMatch || rolMatchSearch
 
-    // Skills Filter
+    // 4. Skills Filter
     const skillsToMatch = [
       ...(c.technicalSkills || []),
       ...(c.softSkills || []),
@@ -305,7 +301,6 @@ const paginatedColaboradores = computed(() => {
 watch(colaboradoresFiltrados, () => {
   currentPage.value = 1
 })
-
 
 function clearFilters() {
   searchTerm.value = ''

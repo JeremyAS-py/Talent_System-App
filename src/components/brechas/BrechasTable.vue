@@ -1,15 +1,20 @@
 <template>
   <q-card flat bordered style="border-radius: 25px">
     <q-card-section class="q-pt-lg q-px-xl">
-      <div v-if="vacancyTitle" class="text-h5 text-weight-bold q-mb-xs">
-        {{ vacancyTitle }}
+      <div class="row q-col-gutter-lg">
+        <div class="col-9">
+          <brechas-table
+            :rows="tableRows"
+            :is-loading="isTableLoading"
+            :vacancy-title="vacancyTitle"
+          />
+        </div>
       </div>
-      <div class="text-h6 text-weight-bold q-mb-md">Detalle de Brechas</div>
 
       <q-table
         :rows="rows"
         :columns="columns"
-        row-key="skill"
+        :row-key="(row) => row.Candidato + row['Habilidad Requerida']"
         hide-pagination
         flat
         bordered
@@ -33,53 +38,60 @@ defineProps({
   },
   vacancyTitle: {
     type: String,
-    default: "",
+    default: '',
   },
-});
+})
 
 const columns = [
   {
-    name: "habilidadRequerida",
-    label: "Habilidad Requerida",
-    align: "left",
-    field: "skill",
+    name: 'candidato',
+    required: true,
+    label: 'Candidato',
+    align: 'left',
+    field: 'Candidato',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
   },
   {
-    name: "nivelRequerido",
-    label: "Nivel Requerido",
-    align: "center",
-    field: "requerido",
+    name: 'habilidadRequerida',
+    label: 'Habilidad Requerida',
+    align: 'left',
+    field: 'Habilidad Requerida',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
   },
   {
-    name: "nivelActual",
-    label: "Nivel Actual",
-    align: "center",
-    field: "disponible",
+    name: 'nivelRequerido',
+    label: 'Nivel Requerido',
+    align: 'center',
+    field: 'Nivel Requerido',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
   },
   {
-    name: "brecha",
-    label: "Brecha (%)",
-    align: "center",
-    field: "brecha",
+    name: 'nivelActual',
+    label: 'Nivel Actual',
+    align: 'center',
+    field: 'Nivel Actual',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
+  },
+  {
+    name: 'brecha',
+    label: 'Brecha (%)',
+    align: 'center',
+    field: 'Brecha (%)',
+    sortable: true,
+    headerStyle: 'font-weight: bold;',
     classes: (row) => {
-      const brecha = row.brecha;
-      if (typeof brecha === "number") {
-        return brecha < 0
-          ? "text-negative text-weight-bold"
-          : "text-positive text-weight-bold";
+      const brecha = row['Brecha (%)']
+      if (typeof brecha === 'number') {
+        return brecha < 0 ? 'text-negative text-weight-bold' : 'text-positive text-weight-bold'
       }
-      return "";
+      return ''
     },
   },
-];
+]
 </script>
 
 <style scoped>

@@ -16,25 +16,13 @@
         <brechas-chart :rows="tableRows" />
       </div>
 
-      <div class="col-3 column q-gutter-md justify-center">
-        <q-btn
-          color="primary"
-          icon="visibility"
-          label="Ver más"
-          size="lg"
-          rounded
-          class="full-width"
-          padding="md"
-        />
+      <div class="col-3 column q-gutter-sm justify-start">
         <q-btn
           @click="exportarBrechas"
           color="primary"
           icon="file_download"
           label="Exportar"
-          size="lg"
           rounded
-          class="full-width"
-          padding="md"
           :disable="!activeFilters.vacanteId"
         />
       </div>
@@ -59,36 +47,6 @@
           :rows="tableRows"
           :is-loading="isTableLoading"
           :vacancy-title="vacancyTitle"
-        />
-      </div>
-
-      <div class="col-3 column q-gutter-md justify-start">
-        <q-btn
-          color="primary"
-          icon="visibility"
-          label="Ver más"
-          size="lg"
-          rounded
-          class="full-width"
-          padding="md"
-        />
-        <q-btn
-          color="primary"
-          icon="school"
-          label="Ver Capacitación"
-          size="lg"
-          rounded
-          class="full-width"
-          padding="md"
-        />
-        <q-btn
-          color="negative"
-          icon="group_add"
-          label="Ver Reclutamiento"
-          size="lg"
-          rounded
-          class="full-width"
-          padding="md"
         />
       </div>
     </div>
@@ -139,7 +97,7 @@ const fetchBrechasData = async () => {
     const worksheet = workbook.Sheets[sheetName]
     const json = XLSX.utils.sheet_to_json(worksheet, {
       header: ['candidato', 'skill', 'disponible', 'requerido', 'brecha'],
-      range: 1, // Skip the header row in the Excel file
+      range: 4, // Skip the header row in the Excel file
     })
 
     tableRows.value = json

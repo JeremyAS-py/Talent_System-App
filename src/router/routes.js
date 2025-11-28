@@ -28,8 +28,7 @@ const routes = [
       {
         path: 'skill-mapping',
         name: 'skill-mapping',
-        component: () => import('pages/IndexPage.vue'),
-        // TODO: cambia a pages/SkillMappingPage.vue cuando lo tengas
+        component: () => import('pages/SkillMappingPage.vue'),
       },
 
       // Demanda de Talento

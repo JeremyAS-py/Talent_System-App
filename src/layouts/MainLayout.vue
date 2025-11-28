@@ -1,11 +1,75 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-page">
-    <!-- HEADER PRINCIPAL (dashboard) - oculto en páginas de formulario a pantalla completa -->
+    <!-- DRAWER LATERAL -->
+    <q-drawer
+      v-model="leftDrawerOpen"
+      side="left"
+      overlay
+      behavior="mobile"
+      :width="260"
+      class="main-drawer bg-primary text-white"
+    >
+      <div class="drawer-content">
+        <!-- Logo / espacio superior -->
+        <div class="drawer-header q-px-lg q-pt-md q-pb-lg">
+          <div class="drawer-title">
+            <span class="drawer-app-name">Sistema de Gestión</span>
+          </div>
+        </div>
+
+        <!-- OPCIONES PRINCIPALES -->
+        <q-list padding class="drawer-list">
+          <!-- INICIO (lleva a Vista General) -->
+          <q-item clickable v-ripple class="drawer-item" @click="goHome">
+            <q-item-section avatar>
+              <img :src="inicioIcon" alt="Inicio" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Inicio</q-item-section>
+          </q-item>
+
+          <!-- CARGA MASIVA -->
+          <q-item clickable v-ripple class="drawer-item" @click="goCargaMasiva">
+            <q-item-section avatar>
+              <img :src="cargaIcon" alt="Carga masiva" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Carga Masiva</q-item-section>
+          </q-item>
+
+          <!-- EXPORTAR -->
+          <q-item clickable v-ripple class="drawer-item" @click="goExportar">
+            <q-item-section avatar>
+              <q-icon name="download" size="22px" class="drawer-icon-icon" />
+            </q-item-section>
+            <q-item-section>Exportar</q-item-section>
+          </q-item>
+        </q-list>
+
+        <!-- CERRAR SESIÓN ABAJO -->
+        <div class="drawer-footer q-px-lg q-pb-lg q-pt-md">
+          <q-item clickable v-ripple class="drawer-item drawer-item-logout" @click="logout">
+            <q-item-section avatar>
+              <img :src="cerrarIcon" alt="Cerrar sesión" class="drawer-icon" />
+            </q-item-section>
+            <q-item-section>Cerrar Sesión</q-item-section>
+          </q-item>
+        </div>
+      </div>
+    </q-drawer>
+
+    <!-- HEADER PRINCIPAL (se oculta en /app/colaboradores/registrar) -->
     <q-header v-if="showLayout" elevated class="bg-primary text-white">
       <div class="header-content">
         <!-- IZQUIERDA: menú + título -->
         <div class="left-section">
-          <q-btn flat dense round icon="menu" class="menu-btn" size="md" />
+          <q-btn
+            flat
+            dense
+            round
+            icon="menu"
+            class="menu-btn"
+            size="md"
+            @click="toggleDrawer"
+          />
 
           <div class="title-section">
             <div class="title-app">Sistema de Gestión de Talento Interno</div>
@@ -38,7 +102,7 @@
                   clickable
                   v-ripple
                   v-close-popup
-                  @click="navigate('/crear-vacante')"
+                  @click="navigate('/app/crear-vacante')"
                   class="menu-item"
                 >
                   <q-item-section avatar>
@@ -104,9 +168,11 @@
 
     <!-- CONTENIDO -->
     <q-page-container class="page-container">
-      <!-- Si la ruta es registro de colaborador, dejamos que la página controle todo el header -->
       <router-view />
     </q-page-container>
+
+    <!-- Carga Masiva modal (componente flotante) -->
+    <CargaMasivaPage :modelValue="showCargaMasiva" @close="() => (showCargaMasiva = false)" />
   </q-layout>
 </template>
 
@@ -114,22 +180,34 @@
 import { ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
+import inicioIcon from 'assets/dashboard/home.png'
+import cargaIcon from 'assets/dashboard/carga-de-archivos.png'
+import cerrarIcon from 'assets/dashboard/cerrar-sesion.png'
+import CargaMasivaPage from 'pages/CargaMasivaPage.vue'
+
 const router = useRouter()
 const route = useRoute()
 
-// Mapa tab -> ruta (coincide con routes.js)
+// Drawer lateral
+const leftDrawerOpen = ref(false)
+const showCargaMasiva = ref(false)
+const toggleDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
+
+// Mapa tab -> RUTA COMPLETA (incluye /app)
 const tabRouteMap = {
-  vista: '/vista-general',
-  mapping: '/skill-mapping',
-  demanda: '/demanda-talento',
-  brechas: '/brechas-skill',
+  vista: '/app/vista-general',
+  mapping: '/app/skill-mapping',
+  demanda: '/app/demanda-talento',
+  brechas: '/app/brechas-skill',
 }
 
 // Detecta qué tab va con la ruta actual
 function getTabFromPath(path) {
-  if (path.startsWith(tabRouteMap.mapping)) return 'mapping'
-  if (path.startsWith(tabRouteMap.demanda)) return 'demanda'
-  if (path.startsWith(tabRouteMap.brechas)) return 'brechas'
+  if (path.startsWith('/app/skill-mapping')) return 'mapping'
+  if (path.startsWith('/app/demanda-talento')) return 'demanda'
+  if (path.startsWith('/app/brechas-skill')) return 'brechas'
   // por defecto: Vista General
   return 'vista'
 }
@@ -137,8 +215,8 @@ function getTabFromPath(path) {
 // Tab activa según ruta inicial
 const tab = ref(getTabFromPath(route.path))
 
-// Layout con header principal solo en vistas de dashboard
-// Ocultamos header completo solo en la ruta /app/colaboradores/registrar
+// Ocultar header (y tabs) en páginas de formulario pantalla completa
+// ej: /app/colaboradores/registrar
 const showLayout = computed(() => {
   return !route.path.startsWith('/app/colaboradores/registrar')
 })
@@ -148,8 +226,33 @@ const user = {
   name: 'F. Rosales',
 }
 
+// Navegar a una ruta
 function navigate(path) {
   router.push(path)
+}
+
+// Acciones del drawer
+function goHome() {
+  navigate('/app/vista-general')
+  leftDrawerOpen.value = false
+}
+
+function goCargaMasiva() {
+  // abrir modal de carga masiva
+  showCargaMasiva.value = true
+  leftDrawerOpen.value = false
+}
+
+function goExportar() {
+  // ajusta la ruta a la que tengas creada (ej: '/app/exportar')
+  navigate('/app/exportar')
+  leftDrawerOpen.value = false
+}
+
+function logout() {
+  // ruta de login es '/', no '/login'
+  navigate('/')
+  leftDrawerOpen.value = false
 }
 
 // Cuando haces click en una tab
@@ -182,6 +285,69 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 
 .bg-page {
   background: $bg-page;
+}
+
+/* ===== DRAWER LATERAL ===== */
+.main-drawer {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.drawer-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.drawer-title {
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.drawer-list {
+  flex: 1;
+}
+
+.drawer-item {
+  border-radius: 0;
+  padding: 12px 20px;
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 15px;
+  color: $text-white;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.12);
+  }
+}
+
+.drawer-item-logout {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin-top: 8px;
+}
+
+.drawer-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.drawer-icon-icon {
+  color: $text-white;
 }
 
 /* HEADER */
@@ -368,7 +534,7 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 
 /* CONTENEDOR DE PÁGINA */
 .page-container {
-  padding: 0; /* que cada página defina su propio padding (ej: header azul del registro) */
+  padding: 24px 32px;
 }
 
 /* MENÚ + */

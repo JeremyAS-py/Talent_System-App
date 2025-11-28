@@ -10,18 +10,21 @@
         :rows="rows"
         :columns="columns"
         :row-key="(row) => row.candidato + row.skill"
-        hide-pagination
         flat
         bordered
         separator="horizontal"
         :loading="isLoading"
         no-data-label="No hay datos para mostrar. Por favor, genere el reporte."
+        :rows-per-page-options="[10, 20, 30, 50]"
+        v-model:pagination="pagination"
       />
     </q-card-section>
   </q-card>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
 defineProps({
   rows: {
     type: Array,
@@ -33,62 +36,66 @@ defineProps({
   },
   vacancyTitle: {
     type: String,
-    default: "",
+    default: '',
   },
-});
+})
+
+const pagination = ref({
+  rowsPerPage: 10,
+})
 
 const columns = [
   {
-    name: "candidato",
+    name: 'candidato',
     required: true,
-    label: "Candidato",
-    align: "left",
-    field: "candidato",
+    label: 'Candidato',
+    align: 'left',
+    field: 'candidato',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
   },
   {
-    name: "habilidadRequerida",
-    label: "Habilidad Requerida",
-    align: "left",
-    field: "skill",
+    name: 'habilidadRequerida',
+    label: 'Habilidad Requerida',
+    align: 'left',
+    field: 'skill',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
   },
   {
-    name: "nivelRequerido",
-    label: "Nivel Requerido",
-    align: "center",
-    field: "requerido",
+    name: 'nivelRequerido',
+    label: 'Nivel Requerido',
+    align: 'center',
+    field: 'requerido',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
   },
   {
-    name: "nivelActual",
-    label: "Nivel Actual",
-    align: "center",
-    field: "disponible",
+    name: 'nivelActual',
+    label: 'Nivel Actual',
+    align: 'center',
+    field: 'disponible',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
   },
   {
-    name: "brecha",
-    label: "Brecha (%)",
-    align: "center",
-    field: "brecha",
+    name: 'brecha',
+    label: 'Brecha (%)',
+    align: 'center',
+    field: 'brecha',
     sortable: true,
-    headerStyle: "font-weight: bold;",
+    headerStyle: 'font-weight: bold;',
     classes: (row) => {
-      const brecha = row.brecha;
-      if (typeof brecha === "number") {
+      const brecha = row.brecha
+      if (typeof brecha === 'number') {
         return brecha < 0
-          ? "text-negative text-weight-bold"
-          : "text-positive text-weight-bold";
+          ? 'text-negative text-weight-bold'
+          : 'text-positive text-weight-bold'
       }
-      return "";
+      return ''
     },
   },
-];
+]
 </script>
 
 <style scoped>

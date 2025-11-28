@@ -74,7 +74,6 @@
 
       <!-- BLOQUE DERECHO: FILTRAR + EXPORTAR -->
       <div class="filters-actions row items-center q-gutter-sm">
-        <!-- Botón Filtrar (por ahora solo decorativo) -->
         <q-btn outline color="grey-6" class="filter-btn" no-caps>
           <div class="row items-center no-wrap">
             <img :src="filtrarIcon" alt="Filtrar" class="btn-filter-icon" />
@@ -82,7 +81,6 @@
           </div>
         </q-btn>
 
-        <!-- Botón Exportar (general) -->
         <q-btn
           unelevated
           color="primary"
@@ -249,14 +247,120 @@
             </div>
           </q-card-section>
 
-          <!-- FOOTER: Candidatos sugeridos (solo layout, sin dialog) -->
-          <div class="candidatos-footer row items-center justify-between">
+          <!-- FOOTER: Candidatos sugeridos -->
+          <div
+            class="candidatos-footer row items-center justify-between"
+            @click="openCandidatos(vac)"
+          >
             <div class="candidatos-text">Candidatos Sugeridos</div>
             <q-icon name="chevron_right" size="20px" />
           </div>
         </q-card>
       </div>
     </div>
+
+    <!-- =================== DIALOG CANDIDATOS =================== -->
+    <q-dialog v-model="dialogCandidatosOpen">
+      <q-card class="match-dialog-card">
+        <!-- HEADER -->
+        <q-card-section class="row items-center justify-between q-pb-sm">
+          <div>
+            <div class="match-dialog-title">Candidatos internos sugeridos</div>
+            <div class="match-dialog-subtitle">
+              {{ vacanteSeleccionada?.puesto }} · {{ vacanteSeleccionada?.area }}
+            </div>
+          </div>
+          <q-btn flat round icon="close" @click="dialogCandidatosOpen = false" />
+        </q-card-section>
+
+        <q-separator />
+
+        <!-- BODY -->
+        <q-card-section class="q-pt-none">
+          <div v-if="loadingCandidatos" class="text-center q-py-xl">
+            <q-spinner size="40px" color="primary" />
+            <div class="q-mt-sm text-grey-7">Calculando matching...</div>
+          </div>
+
+          <div v-else>
+            <div v-if="!candidatos.length" class="text-center q-py-xl text-grey-7">
+              No se encontraron candidatos internos para esta vacante.
+            </div>
+
+            <div v-else class="match-table">
+              <!-- Header tipo tabla -->
+              <div class="match-header row items-center q-px-lg q-py-sm">
+                <div class="col-4">Colaborador</div>
+                <div class="col-2 text-center">Match</div>
+                <div class="col-2 text-center">Skill</div>
+                <div class="col-2 text-center">Readiness</div>
+                <div class="col-2 text-right">Acciones</div>
+              </div>
+              <q-separator />
+
+              <!-- Filas -->
+              <div
+                v-for="cand in candidatos"
+                :key="cand.id"
+                class="match-row row items-center q-px-lg q-py-sm"
+              >
+                <!-- Colaborador -->
+                <div class="col-4">
+                  <div class="cand-name">{{ cand.nombre }}</div>
+                  <div class="cand-role">
+                    {{ cand.resumenPuesto }}
+                  </div>
+                </div>
+
+                <!-- Match -->
+                <div class="col-2 text-center">
+                  <span :class="['metric', metricColorClass(cand.match)]">
+                    {{ formatPercent(cand.match) }}
+                  </span>
+                </div>
+
+                <!-- Skill -->
+                <div class="col-2 text-center">
+                  <span :class="['metric', metricColorClass(cand.skillScore)]">
+                    {{ formatPercent(cand.skillScore) }}
+                  </span>
+                </div>
+
+                <!-- Readiness -->
+                <div class="col-2 text-center">
+                  <span :class="['metric', metricColorClass(cand.readinessScore)]">
+                    {{ formatPercent(cand.readinessScore) }}
+                  </span>
+                </div>
+
+                <!-- Acciones -->
+                <div class="col-2">
+                  <div class="actions-cell">
+                    <q-btn
+                      dense
+                      no-caps
+                      class="btn-capacitacion"
+                    >
+                      <img :src="birreteIcon" class="btn-icon" alt="Capacitación" />
+                      <span class="btn-label">Ver</span>
+                    </q-btn>
+
+                    <q-btn
+                      dense
+                      no-caps
+                      class="btn-asignar"
+                    >
+                      <img :src="agregarIcon" class="btn-icon" alt="Asignar" />
+                      <span class="btn-label">Asignar</span>
+                    </q-btn>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -272,9 +376,11 @@ import tendenciaIcon from 'assets/dashboard/tendencia.png'
 import busquedaIcon from 'assets/dashboard/busqueda.png'
 import descargasIcon from 'assets/dashboard/descargas.png'
 import descargarWhiteIcon from 'assets/dashboard/descargar (1).png'
+import birreteIcon from 'assets/dashboard/birrete.png'
+import agregarIcon from 'assets/dashboard/agregar_.png'
 
 // ======== STATE PRINCIPAL ========
-const vacantes = ref([]) // viene del backend
+const vacantes = ref([])
 
 // filtros
 const filtroTexto = ref('')
@@ -282,21 +388,27 @@ const filtroDepartamento = ref(null)
 const filtroRol = ref(null)
 const filtroSkill = ref(null)
 
-// opciones de selects (se rellenan con backend donde aplique)
+// opciones de selects
 const departamentoOptions = ref([
-  { label: 'Todos los Departamentos', value: null },
+  { label: 'Todos los Departamentos', value: null }
 ])
 const rolOptions = ref([
-  { label: 'Todos los Roles', value: null },
+  { label: 'Todos los Roles', value: null }
 ])
 const skillOptions = ref([
-  { label: 'Todas las Skills', value: null },
+  { label: 'Todas las Skills', value: null }
 ])
 
-// ======== CARGA DE DATA DESDE BACKEND ========
 const cargando = ref(false)
 
-function mapUrgencia(nombre) {
+// ======== DIALOG CANDIDATOS ========
+const dialogCandidatosOpen = ref(false)
+const vacanteSeleccionada = ref(null)
+const candidatos = ref([])
+const loadingCandidatos = ref(false)
+
+// ==== MAPEO URGENCIA ====
+function mapUrgencia (nombre) {
   const n = (nombre || '').toLowerCase()
   if (n === 'alta') return { label: 'URGENTE', color: 'negative' }
   if (n === 'media') return { label: 'MEDIA', color: 'warning' }
@@ -304,7 +416,8 @@ function mapUrgencia(nombre) {
   return { label: nombre || 'SIN PRIORIDAD', color: 'grey-5' }
 }
 
-async function cargarData() {
+// ======== CARGA DE DATA DESDE BACKEND ========
+async function cargarData () {
   try {
     cargando.value = true
 
@@ -318,10 +431,10 @@ async function cargarData() {
       const skills = resSkills.data || []
       skillOptions.value = [
         { label: 'Todas las Skills', value: null },
-        ...skills.map((s) => ({
+        ...skills.map(s => ({
           label: s.nombre,
-          value: s.nombre,
-        })),
+          value: s.nombre
+        }))
       ]
     } catch (err) {
       console.error('Error cargando skills para filtro', err)
@@ -333,39 +446,39 @@ async function cargarData() {
       const deps = resDep.data || []
       departamentoOptions.value = [
         { label: 'Todos los Departamentos', value: null },
-        ...deps.map((d) => ({
+        ...deps.map(d => ({
           label: d.nombre,
-          value: d.nombre,
-        })),
+          value: d.nombre
+        }))
       ]
     } catch (err) {
       console.warn('No se pudieron cargar departamentos (opcional)', err)
     }
 
     // 4) Mapear vacantes a estructura del frontend
-    const mapeadas = lista.map((v) => {
+    const mapeadas = lista.map(v => {
       const urg = mapUrgencia(v.urgenciaNombre)
       return {
         id: v.vacanteId,
         puesto: v.titulo,
-        area: v.perfilNombre, // "Desarrollo Backend · Tecnología" en tu Figma
+        area: v.perfilNombre,
         urgencia: urg.label,
         urgenciaColor: urg.color,
-        coberturaInterna: 0, // placeholder hasta que tengas el cálculo real
-        requeridos: 1, // si luego agregas campo "Cantidad", lo reemplazas aquí
-        departamento: null, // si tienes dpto ligado a la vacante, ponlo aquí
-        rol: v.perfilNombre, // lo usamos como "rol" para filtrar
-        skillsRequeridos: [],
+        coberturaInterna: 0,
+        requeridos: 1,
+        departamento: null, // pendiente hasta que backend lo provea
+        rol: v.perfilNombre,
+        skillsRequeridos: []
       }
     })
 
     // 5) Para cada vacante, traer sus skills requeridos
     await Promise.all(
-      mapeadas.map(async (vac) => {
+      mapeadas.map(async vac => {
         try {
           const resSkillsReq = await api.get(`/api/vacante/${vac.id}/skills`)
           const reqs = resSkillsReq.data || []
-          vac.skillsRequeridos = reqs.map((r) => {
+          vac.skillsRequeridos = reqs.map(r => {
             const nombre = r.skillNombre || r.skillName
             const nivel = r.nivelNombre || null
             return nivel ? `${nombre} · ${nivel}` : nombre
@@ -389,7 +502,7 @@ onMounted(cargarData)
 
 // ======== FILTRADO ========
 const vacantesFiltradas = computed(() => {
-  return vacantes.value.filter((v) => {
+  return vacantes.value.filter(v => {
     const texto = (filtroTexto.value || '').toLowerCase()
 
     const matchTexto =
@@ -404,7 +517,7 @@ const vacantesFiltradas = computed(() => {
 
     const matchSkill =
       !filtroSkill.value ||
-      (v.skillsRequeridos || []).some((skill) =>
+      (v.skillsRequeridos || []).some(skill =>
         skill.toLowerCase().includes(filtroSkill.value.toLowerCase())
       )
 
@@ -416,7 +529,7 @@ const vacantesFiltradas = computed(() => {
 const totalVacantes = computed(() => vacantesFiltradas.value.length)
 
 const vacantesUrgentes = computed(
-  () => vacantesFiltradas.value.filter((v) => v.urgencia === 'URGENTE').length
+  () => vacantesFiltradas.value.filter(v => v.urgencia === 'URGENTE').length
 )
 
 const coberturaInternaPromedio = computed(() => {
@@ -428,20 +541,134 @@ const coberturaInternaPromedio = computed(() => {
   return Math.round(suma / vacantesFiltradas.value.length)
 })
 
-// de momento 0; si luego tienes un KPI de skills críticos, lo conectamos
+// de momento 0; cuando tengas KPI real lo conectas
 const skillsCriticosCubiertos = computed(() => 0)
 
 // ======== ACCIONES EXPORTAR ========
-function exportarVacantes() {
-  // Si tienes un endpoint general de exportación de KPIs o vacantes,
-  // lo puedes llamar aquí. Por ahora solo dejo un console:
+function exportarVacantes () {
   console.log('Exportar vacantes (pendiente de definir endpoint)')
 }
 
-function exportarVacante(vacId) {
-  // Usa el ExportacionController: GET /api/exportacion/ranking/{vacanteId}
+function exportarVacante (vacId) {
   const base = api.defaults.baseURL || 'http://localhost:5066'
   window.open(`${base}/api/exportacion/ranking/${vacId}`, '_blank')
+}
+
+// ======== HELPERS PORCENTAJES ========
+function formatPercent (val) {
+  if (val === null || val === undefined || isNaN(val)) return '--'
+  return `${Math.round(val)}%`
+}
+
+function metricColorClass (val) {
+  if (val === null || val === undefined || isNaN(val)) return 'metric-low'
+  if (val >= 60) return 'metric-high'
+  if (val >= 40) return 'metric-mid'
+  return 'metric-low'
+}
+
+// ======== CÁLCULO Skill% y Readiness% EN FRONT ========
+function computeSkillAndReadiness (candidate, reqs) {
+  const skills = candidate.skills || []
+  if (!reqs.length || !skills.length) {
+    return { skillPercent: 0, readinessPercent: 0 }
+  }
+
+  let coverageSum = 0
+  let expYearsSum = 0
+  let expCount = 0
+
+  reqs.forEach(req => {
+    const cs = skills.find(s => s.skillId === req.skillId)
+    if (!cs) return
+
+    const nivelC = cs.nivelId || 0
+    const nivelR = req.nivelDeseado || 1
+
+    // Cobertura de skill
+    let coverage = 0
+    if (nivelC >= nivelR) {
+      coverage = 1           // cumple o supera
+    } else if (nivelC === nivelR - 1) {
+      coverage = 0.5         // está a un nivel por debajo
+    } else {
+      coverage = 0           // muy lejos o no tiene la skill
+    }
+    coverageSum += coverage
+
+    // Experiencia
+    if (cs.aniosExp != null) {
+      expYearsSum += cs.aniosExp
+      expCount++
+    }
+  })
+
+  // Skill% = cobertura promedio de skills requeridas
+  const rawSkill = (coverageSum / reqs.length) * 100
+
+  // Exp% = promedio de años / 5 (tope), en porcentaje
+  let expPercent = 0
+  if (expCount > 0) {
+    const avgYears = expYearsSum / expCount
+    const maxYears = 5
+    expPercent = Math.min(1, avgYears / maxYears) * 100
+  }
+
+  // Readiness = 70% skill + 30% experiencia
+  const readiness = 0.7 * rawSkill + 0.3 * expPercent
+
+  return {
+    skillPercent: Math.round(rawSkill),
+    readinessPercent: Math.round(readiness)
+  }
+}
+
+// ======== CANDIDATOS (DIALOG) ========
+async function openCandidatos (vac) {
+  vacanteSeleccionada.value = vac
+  dialogCandidatosOpen.value = true
+  loadingCandidatos.value = true
+  candidatos.value = []
+
+  try {
+    // ranking + requisitos de skill en paralelo
+    const [resRanking, resReqs] = await Promise.all([
+      api.get(`/api/vacante/${vac.id}/ranking`),
+      api.get(`/api/vacante/${vac.id}/skills`)
+    ])
+
+    const ranking = resRanking.data || []
+    const reqs = (resReqs.data || []).map(r => ({
+      skillId: r.skillId,
+      nivelDeseado: r.nivelDeseado ?? r.nivelRequerido ?? 1,
+      peso: r.peso ?? 1,
+      critico: !!r.critico
+    }))
+
+    candidatos.value = ranking.map(c => {
+      const { skillPercent, readinessPercent } =
+        computeSkillAndReadiness(c, reqs)
+
+      const skillsNames = (c.skills || [])
+        .map(s => s.skillNombre || s.skillName)
+        .filter(Boolean)
+
+      const match = Number(c.matchScore ?? 0)
+
+      return {
+        id: c.colaboradorId,
+        nombre: c.nombre,
+        resumenPuesto: skillsNames.length ? skillsNames.join(' · ') : '—',
+        match,
+        skillScore: skillPercent,
+        readinessScore: readinessPercent
+      }
+    })
+  } catch (err) {
+    console.error('Error cargando ranking de candidatos', err)
+  } finally {
+    loadingCandidatos.value = false
+  }
 }
 </script>
 
@@ -456,12 +683,7 @@ function exportarVacante(vacId) {
 }
 
 .page-title {
-  font-family:
-    'Inter',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
   font-size: 26px;
   font-weight: 700;
@@ -470,11 +692,7 @@ function exportarVacante(vacId) {
 }
 
 .page-subtitle {
-  font-family:
-    'Roboto',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
   font-size: 14px;
   color: #6b7280;
@@ -490,7 +708,6 @@ function exportarVacante(vacId) {
   flex-wrap: wrap;
 }
 
-/* Cada control tiene mismo ancho para que se vea alineado al Figma */
 .filter-item {
   width: 260px;
 }
@@ -729,5 +946,110 @@ function exportarVacante(vacId) {
     justify-content: center;
     text-align: center;
   }
+}
+
+/* ========== DIALOG MATCHING ========== */
+.match-dialog-card {
+  width: 96vw;
+  max-width: 1200px;
+  max-height: 90vh;
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+}
+
+.match-dialog-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.match-dialog-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.match-table {
+  max-height: 64vh;
+  overflow-y: auto;
+}
+
+.match-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.match-row:nth-child(odd) {
+  background: #f9fafb;
+}
+
+.match-row:nth-child(even) {
+  background: #ffffff;
+}
+
+.cand-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cand-role {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Métricas */
+.metric {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.metric-high {
+  color: #16a34a; /* verde */
+}
+
+.metric-mid {
+  color: #f59e0b; /* amarillo */
+}
+
+.metric-low {
+  color: #ef4444; /* rojo */
+}
+
+/* Botones del dialog */
+.actions-cell {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-capacitacion {
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.btn-asignar {
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.btn-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+}
+
+.btn-label {
+  white-space: nowrap;
 }
 </style>

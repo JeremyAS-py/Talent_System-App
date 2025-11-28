@@ -138,7 +138,7 @@ const fetchBrechasData = async () => {
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
     const json = XLSX.utils.sheet_to_json(worksheet, {
-      header: ['skill', 'disponible', 'requerido', 'brecha'],
+      header: ['candidato', 'skill', 'disponible', 'requerido', 'brecha'],
       range: 1, // Skip the header row in the Excel file
     })
 

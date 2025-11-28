@@ -10,14 +10,12 @@ const routes = [
   {
     path: '/app',
     component: () => import('layouts/MainLayout.vue'),
+    meta: { requiresAuth: true },
     children: [
-      // redirige /app -> /app/vista-general
       {
         path: '',
         redirect: '/app/vista-general',
       },
-
-      // Vista General (IndexPage)
       {
         path: 'vista-general',
         name: 'vista-general',
@@ -58,7 +56,8 @@ const routes = [
       {
         path: 'colaboradores/registrar',
         name: 'registrar-colaborador',
-        component: () => import('pages/IndexPage.vue'),
+        component: () => import('components/RegisterColabForm.vue'),
+        meta: { hideHeader: true },
         // TODO: cambia a pages/RegistrarColaboradorPage.vue cuando la crees
       },
     ],

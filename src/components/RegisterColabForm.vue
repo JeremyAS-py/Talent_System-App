@@ -200,15 +200,6 @@
                       size="sm"
                       @click="openSkillDialogForEdit(index)"
                     />
-                    <q-btn
-                      flat
-                      round
-                      dense
-                      icon="delete"
-                      size="sm"
-                      color="negative"
-                      @click="onDeleteSkill(index)"
-                    />
                   </div>
                 </div>
               </div>
@@ -264,15 +255,6 @@
                       icon="edit"
                       size="sm"
                       @click="openCertDialogForEdit(index)"
-                    />
-                    <q-btn
-                      flat
-                      round
-                      dense
-                      icon="delete"
-                      size="sm"
-                      color="negative"
-                      @click="onDeleteCert(index)"
                     />
                   </div>
                 </div>

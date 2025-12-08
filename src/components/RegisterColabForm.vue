@@ -874,7 +874,7 @@ export default {
         if (this.form.certificaciones.length) {
           const certPayload = this.form.certificaciones.map((c) => ({
             certificacionId: c.certificacionId,
-            fechaObtencion: c.fechaObtencion,
+            fechaObtencion: c.fechaObtencion, // 'YYYY-MM-DD'
           }))
 
           await api.post(

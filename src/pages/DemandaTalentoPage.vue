@@ -658,22 +658,35 @@ async function openCandidatos (vac) {
     }))
 
     candidatos.value = ranking.map(c => {
-      const { skillPercent, readinessPercent } =
-        computeSkillAndReadiness(c, reqs)
+  const { skillPercent, readinessPercent } =
+    computeSkillAndReadiness(c, reqs)
 
-      const skillsNames = (c.skills || [])
-        .map(s => s.skillNombre || s.skillName)
-        .filter(Boolean)
+  const skillsNames = (c.skills || [])
+    .map(s => s.skillNombre || s.skillName)
+    .filter(Boolean)
 
-      const match = Number(c.matchScore ?? 0)
+  // 👇 usar porcentajeMatch del backend
+  let rawMatch =
+    c.porcentajeMatch ??     // JSON: porcentajeMatch
+    c.PorcentajeMatch ??     // por si viene en PascalCase
+    c.matchScore ??          // fallback por si luego lo cambias
+    0
 
-      return {
-        id: c.colaboradorId,
-        nombre: c.nombre,
-        resumenPuesto: skillsNames.length ? skillsNames.join(' · ') : '—',
-        match,
-        skillScore: skillPercent,
-        readinessScore: readinessPercent
+  rawMatch = Number(rawMatch)
+
+  // Si algún día decides devolver 0–1 desde el backend, esto ya lo cubre:
+  const match =
+    rawMatch > 0 && rawMatch <= 1
+      ? rawMatch * 100
+      : rawMatch
+
+  return {
+    id: c.colaboradorId,
+    nombre: c.nombre,
+    resumenPuesto: skillsNames.length ? skillsNames.join(' · ') : '—',
+    match,
+    skillScore: skillPercent,
+    readinessScore: readinessPercent
       }
     })
   } catch (err) {
@@ -690,11 +703,10 @@ async function asignarCandidato (cand) {
   try {
     asignando.value = true
 
-    // POST al endpoint que crea la Postulación (estado "En Revisión")
-    await api.post('/api/postulacion', {
+    // 👇 NUEVO: usamos el endpoint masivo pero con 1 solo colaborador
+    await api.post('/api/Postulacion/masivo', {
       vacanteId: vacanteSeleccionada.value.id,
-      colaboradorId: cand.id,
-      matchScore: typeof cand.match === 'number' ? cand.match : 0
+      colaboradorIds: [cand.id]   // importante: lista, no un solo número
     })
 
     $q.notify({
@@ -703,7 +715,7 @@ async function asignarCandidato (cand) {
     })
 
     dialogCandidatosOpen.value = false
-    await cargarData() // recargar para que la vacante cerrada desaparezca
+    await cargarData() // recargar para que si la vacante se cierra, desaparezca
   } catch (err) {
     console.error('Error asignando candidato', err)
 

@@ -16,7 +16,7 @@ import routes from './routes'
  * with the Router instance.
  */
 
-export default defineRouter(function (/* { store, ssrContext } */) {
+export default defineRouter(function () {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
     : process.env.VUE_ROUTER_MODE === 'history'
@@ -26,11 +26,25 @@ export default defineRouter(function (/* { store, ssrContext } */) {
   const Router = createRouter({
     scrollBehavior: () => ({ left: 0, top: 0 }),
     routes,
-
-    // Leave this as is and make changes in quasar.conf.js instead!
-    // quasar.conf.js -> build -> vueRouterMode
-    // quasar.conf.js -> build -> publicPath
     history: createHistory(process.env.VUE_ROUTER_BASE),
+  })
+
+  // ===== GUARD GLOBAL DE AUTENTICACIÓN =====
+  Router.beforeEach((to, from, next) => {
+    const token = localStorage.getItem('token')
+
+    // ¿Alguna de las rutas que matchean requiere auth?
+    const requiereAuth = to.matched.some((route) => route.meta.requiresAuth)
+
+    if (requiereAuth && !token) {
+      // Quiere entrar a /app/... sin token → al login
+      next({ name: 'login' })
+    } else if (!requiereAuth && token && to.name === 'login') {
+      // Ya está logeado y quiere ir al login → al dashboard
+      next({ name: 'vista-general' })
+    } else {
+      next()
+    }
   })
 
   return Router

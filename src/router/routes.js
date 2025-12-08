@@ -10,11 +10,12 @@ const routes = [
   {
     path: '/app',
     component: () => import('layouts/MainLayout.vue'),
+    meta: { requiresAuth: true },
     children: [
       // redirige /app -> /app/vista-general
       {
         path: '',
-        redirect: '/vista-general',
+        redirect: '/app/vista-general',
       },
 
       // Vista General (IndexPage)

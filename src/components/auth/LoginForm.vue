@@ -48,6 +48,7 @@
           unelevated
           class="full-width"
           label="Iniciar Sesión"
+          :loading="loading"
           @click="login"
         />
       </q-card>

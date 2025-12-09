@@ -12,13 +12,10 @@ const routes = [
     component: () => import('layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
     children: [
-      // redirige /app -> /app/vista-general
       {
         path: '',
         redirect: '/app/vista-general',
       },
-
-      // Vista General (IndexPage)
       {
         path: 'vista-general',
         name: 'vista-general',
@@ -29,8 +26,7 @@ const routes = [
       {
         path: 'skill-mapping',
         name: 'skill-mapping',
-        component: () => import('pages/IndexPage.vue'),
-        // TODO: cambia a pages/SkillMappingPage.vue cuando lo tengas
+        component: () => import('pages/SkillMappingPage.vue'),
       },
 
       // Demanda de Talento
@@ -45,8 +41,16 @@ const routes = [
       {
         path: 'brechas-skill',
         name: 'brechas-skill',
-        component: () => import('pages/IndexPage.vue'),
+        component: () => import('pages/BrechasSkillPage.vue'),
         // TODO: cambia a pages/BrechasSkillPage.vue
+      },
+      {
+        path: 'perfil-colaborador/:id',
+        name: 'perfil-colaborador',
+        component: () => import('pages/PerfilColabPage.vue'),
+        props: (route) => ({
+          colaboradorId: Number(route.params.id),
+        }),
       },
 
       // Crear vacante
@@ -60,7 +64,8 @@ const routes = [
       {
         path: 'colaboradores/registrar',
         name: 'registrar-colaborador',
-        component: () => import('pages/IndexPage.vue'),
+        component: () => import('components/RegisterColabForm.vue'),
+        meta: { hideHeader: true },
         // TODO: cambia a pages/RegistrarColaboradorPage.vue cuando la crees
       },
     ],

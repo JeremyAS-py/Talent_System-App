@@ -7,15 +7,6 @@ import {
 } from 'vue-router'
 import routes from './routes'
 
-/*
- * If not building with SSR mode, you can
- * directly export the Router instantiation;
- *
- * The function below can be async too; either use
- * async/await or return a Promise which resolves
- * with the Router instance.
- */
-
 export default defineRouter(function () {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
@@ -29,19 +20,16 @@ export default defineRouter(function () {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   })
 
+  // 🔐 GUARD DE AUTENTICACIÓN
   // ===== GUARD GLOBAL DE AUTENTICACIÓN =====
   Router.beforeEach((to, from, next) => {
     const token = localStorage.getItem('token')
 
-    // ¿Alguna de las rutas que matchean requiere auth?
+    // Revisamos si alguna ruta requiere autenticación
     const requiereAuth = to.matched.some((route) => route.meta.requiresAuth)
 
     if (requiereAuth && !token) {
-      // Quiere entrar a /app/... sin token → al login
       next({ name: 'login' })
-    } else if (!requiereAuth && token && to.name === 'login') {
-      // Ya está logeado y quiere ir al login → al dashboard
-      next({ name: 'vista-general' })
     } else {
       next()
     }

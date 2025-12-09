@@ -74,6 +74,15 @@ export default defineConfig((/* ctx */) => {
     devServer: {
       // https: true,
       open: true, // opens browser window automatically
+      proxy: {
+        '/api': {
+          // backend redirects to HTTPS on :7100; proxy directly to that origin
+          target: 'https://localhost:7100',
+          changeOrigin: true,
+          secure: false,
+          ws: false,
+        },
+      },
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework

@@ -20,12 +20,7 @@
         <!-- OPCIONES PRINCIPALES -->
         <q-list padding class="drawer-list">
           <!-- INICIO (lleva a Vista General) -->
-          <q-item
-            clickable
-            v-ripple
-            class="drawer-item"
-            @click="goHome"
-          >
+          <q-item clickable v-ripple class="drawer-item" @click="goHome">
             <q-item-section avatar>
               <img :src="inicioIcon" alt="Inicio" class="drawer-icon" />
             </q-item-section>
@@ -33,12 +28,7 @@
           </q-item>
 
           <!-- CARGA MASIVA -->
-          <q-item
-            clickable
-            v-ripple
-            class="drawer-item"
-            @click="goCargaMasiva"
-          >
+          <q-item clickable v-ripple class="drawer-item" @click="goCargaMasiva">
             <q-item-section avatar>
               <img :src="cargaIcon" alt="Carga masiva" class="drawer-icon" />
             </q-item-section>
@@ -46,12 +36,7 @@
           </q-item>
 
           <!-- EXPORTAR -->
-          <q-item
-            clickable
-            v-ripple
-            class="drawer-item"
-            @click="goExportar"
-          >
+          <q-item clickable v-ripple class="drawer-item" @click="goExportar">
             <q-item-section avatar>
               <q-icon name="download" size="22px" class="drawer-icon-icon" />
             </q-item-section>
@@ -61,12 +46,7 @@
 
         <!-- CERRAR SESIÓN ABAJO -->
         <div class="drawer-footer q-px-lg q-pb-lg q-pt-md">
-          <q-item
-            clickable
-            v-ripple
-            class="drawer-item drawer-item-logout"
-            @click="logout"
-          >
+          <q-item clickable v-ripple class="drawer-item drawer-item-logout" @click="logout">
             <q-item-section avatar>
               <img :src="cerrarIcon" alt="Cerrar sesión" class="drawer-icon" />
             </q-item-section>
@@ -76,8 +56,8 @@
       </div>
     </q-drawer>
 
-    <!-- HEADER -->
-    <q-header elevated class="bg-primary text-white">
+    <!-- HEADER PRINCIPAL (se oculta en /app/colaboradores/registrar) -->
+    <q-header v-if="showLayout" elevated class="bg-primary text-white">
       <div class="header-content">
         <!-- IZQUIERDA: menú + título -->
         <div class="left-section">
@@ -93,9 +73,7 @@
 
           <div class="title-section">
             <div class="title-app">Sistema de Gestión de Talento Interno</div>
-            <div class="subtitle-app">
-              Movilidad interna inteligente basada en skills
-            </div>
+            <div class="subtitle-app">Movilidad interna inteligente basada en skills</div>
           </div>
         </div>
 
@@ -104,26 +82,14 @@
         <!-- DERECHA: + menú y usuario -->
         <div class="right-section">
           <!-- BOTÓN + CON MENÚ (activador directo) -->
-          <q-btn
-            round
-            color="white"
-            text-color="primary"
-            icon="add"
-            size="md"
-            class="add-btn"
-          >
-            <q-menu
-              anchor="bottom right"
-              self="top right"
-              class="custom-menu"
-              :offset="[0, 8]"
-            >
+          <q-btn round color="white" text-color="primary" icon="add" size="md" class="add-btn">
+            <q-menu anchor="bottom right" self="top right" class="custom-menu" :offset="[0, 8]">
               <q-list style="min-width: 220px">
                 <q-item
                   clickable
                   v-ripple
                   v-close-popup
-                  @click="navigate('/colaboradores/registrar')"
+                  @click="navigate('/app/colaboradores/registrar')"
                   class="menu-item"
                 >
                   <q-item-section avatar>
@@ -136,7 +102,7 @@
                   clickable
                   v-ripple
                   v-close-popup
-                  @click="navigate('/crear-vacante')"
+                  @click="navigate('/app/crear-vacante')"
                   class="menu-item"
                 >
                   <q-item-section avatar>
@@ -150,12 +116,7 @@
 
           <!-- USUARIO -->
           <div class="user-section">
-            <q-avatar
-              size="44px"
-              color="white"
-              text-color="primary"
-              class="user-avatar"
-            >
+            <q-avatar size="44px" color="white" text-color="primary" class="user-avatar">
               <q-icon name="person" size="24px" />
             </q-avatar>
 
@@ -209,39 +170,44 @@
     <q-page-container class="page-container">
       <router-view />
     </q-page-container>
+
+    <!-- Carga Masiva modal (componente flotante) -->
+    <CargaMasivaPage :modelValue="showCargaMasiva" @close="() => (showCargaMasiva = false)" />
   </q-layout>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 import inicioIcon from 'assets/dashboard/home.png'
 import cargaIcon from 'assets/dashboard/carga-de-archivos.png'
 import cerrarIcon from 'assets/dashboard/cerrar-sesion.png'
+import CargaMasivaPage from 'pages/CargaMasivaPage.vue'
 
 const router = useRouter()
 const route = useRoute()
 
 // Drawer lateral
 const leftDrawerOpen = ref(false)
+const showCargaMasiva = ref(false)
 const toggleDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
-// Mapa tab -> ruta (coincide con routes.js)
+// Mapa tab -> RUTA COMPLETA (incluye /app)
 const tabRouteMap = {
-  vista: '/vista-general',
-  mapping: '/skill-mapping',
-  demanda: '/demanda-talento',
-  brechas: '/brechas-skill'
+  vista: '/app/vista-general',
+  mapping: '/app/skill-mapping',
+  demanda: '/app/demanda-talento',
+  brechas: '/app/brechas-skill',
 }
 
 // Detecta qué tab va con la ruta actual
-function getTabFromPath (path) {
-  if (path.startsWith(tabRouteMap.mapping)) return 'mapping'
-  if (path.startsWith(tabRouteMap.demanda)) return 'demanda'
-  if (path.startsWith(tabRouteMap.brechas)) return 'brechas'
+function getTabFromPath(path) {
+  if (path.startsWith('/app/skill-mapping')) return 'mapping'
+  if (path.startsWith('/app/demanda-talento')) return 'demanda'
+  if (path.startsWith('/app/brechas-skill')) return 'brechas'
   // por defecto: Vista General
   return 'vista'
 }
@@ -249,42 +215,48 @@ function getTabFromPath (path) {
 // Tab activa según ruta inicial
 const tab = ref(getTabFromPath(route.path))
 
+// Ocultar header (y tabs) en páginas de formulario pantalla completa
+// ej: /app/colaboradores/registrar
+const showLayout = computed(() => {
+  return !route.path.startsWith('/app/colaboradores/registrar')
+})
+
 // En producción esto vendría del login / store
 const user = {
-  name: 'F. Rosales'
+  name: 'F. Rosales',
 }
 
-function navigate (path) {
+// Navegar a una ruta
+function navigate(path) {
   router.push(path)
 }
 
 // Acciones del drawer
-function goHome () {
-  navigate('/vista-general')
+function goHome() {
+  navigate('/app/vista-general')
   leftDrawerOpen.value = false
 }
 
-function goCargaMasiva () {
-  // ajusta la ruta a la que tengas creada
-  navigate('/carga-masiva')
+function goCargaMasiva() {
+  // abrir modal de carga masiva
+  showCargaMasiva.value = true
   leftDrawerOpen.value = false
 }
 
-function goExportar () {
-  // aquí podrías llevar a una pantalla de reportes / export
-  navigate('/exportar')
+function goExportar() {
+  // ajusta la ruta a la que tengas creada (ej: '/app/exportar')
+  navigate('/app/exportar')
   leftDrawerOpen.value = false
 }
 
-function logout () {
-  // aquí puedes limpiar token/localStorage si ya lo tienes
-  // localStorage.removeItem('token')
-  navigate('/login')
+function logout() {
+  // ruta de login es '/', no '/login'
+  navigate('/')
   leftDrawerOpen.value = false
 }
 
 // Cuando haces click en una tab
-function changeTab (tabName) {
+function changeTab(tabName) {
   tab.value = tabName
   const path = tabRouteMap[tabName]
   if (path) router.push(path)
@@ -293,9 +265,9 @@ function changeTab (tabName) {
 // Si navegas por otros lados, mantenemos el tab sincronizado
 watch(
   () => route.path,
-  newPath => {
+  (newPath) => {
     tab.value = getTabFromPath(newPath)
-  }
+  },
 )
 </script>
 
@@ -332,7 +304,12 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .drawer-title {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 16px;
   font-weight: 600;
@@ -345,7 +322,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 .drawer-item {
   border-radius: 0;
   padding: 12px 20px;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 15px;
   color: $text-white;
@@ -399,7 +380,12 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .title-app {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 18px;
   font-weight: 700;
@@ -409,7 +395,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .subtitle-app {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 13px;
   font-weight: 400;
@@ -466,7 +456,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .user-name {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-weight: 600;
   font-size: 14px;
@@ -475,7 +469,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 }
 
 .user-role {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 12px;
   font-weight: 400;
@@ -502,7 +500,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
   :deep(.q-tab) {
     padding: 14px 20px;
     min-height: 48px;
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    font-family:
+      'Roboto',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
       sans-serif;
     font-size: 14px;
     font-weight: 500;
@@ -548,7 +550,11 @@ $hover-bg: rgba(36, 105, 188, 0.12);
 .menu-item {
   border-radius: 6px;
   padding: 10px 12px;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-size: 14px;
 

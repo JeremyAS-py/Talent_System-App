@@ -27,24 +27,30 @@
             <q-item-section>Inicio</q-item-section>
           </q-item>
 
-          <!-- CARGA MASIVA -->
-          <q-item clickable v-ripple class="drawer-item" @click="goCargaMasiva">
+          <!-- CARGA MASIVA (solo Admin) -->
+          <q-item
+            v-if="canCargaMasiva"
+            clickable
+            v-ripple
+            class="drawer-item"
+            @click="goCargaMasiva"
+          >
             <q-item-section avatar>
               <img :src="cargaIcon" alt="Carga masiva" class="drawer-icon" />
             </q-item-section>
             <q-item-section>Carga Masiva</q-item-section>
           </q-item>
 
-          <!-- EXPORTAR -->
-          <q-item clickable v-ripple class="drawer-item" @click="goExportar">
+          <!-- EXPORTAR (Admin + RRHH) -->
+          <q-item v-if="canExportar" clickable v-ripple class="drawer-item" @click="goExportar">
             <q-item-section avatar>
               <q-icon name="download" size="22px" class="drawer-icon-icon" />
             </q-item-section>
             <q-item-section>Exportar</q-item-section>
           </q-item>
 
-          <!-- AUDITORÍA -->
-          <q-item clickable v-ripple class="drawer-item" @click="goAuditoria">
+          <!-- AUDITORÍA (solo Admin) -->
+          <q-item v-if="canAuditoria" clickable v-ripple class="drawer-item" @click="goAuditoria">
             <q-item-section avatar>
               <q-icon name="fact_check" size="22px" class="drawer-icon-icon" />
             </q-item-section>
@@ -64,7 +70,7 @@
       </div>
     </q-drawer>
 
-    <!-- HEADER PRINCIPAL (se oculta en /app/colaboradores/registrar) -->
+    <!-- HEADER PRINCIPAL -->
     <q-header v-if="showLayout" elevated class="bg-primary text-white">
       <div class="header-content">
         <!-- IZQUIERDA: menú + título -->
@@ -82,35 +88,43 @@
         <!-- DERECHA: + menú y usuario -->
         <div class="right-section">
           <!-- BOTÓN + CON MENÚ (activador directo) -->
-          <q-btn round color="white" text-color="primary" icon="add" size="md" class="add-btn">
+          <q-btn
+            v-if="canMostrarPlus"
+            round
+            color="white"
+            text-color="primary"
+            icon="add"
+            size="md"
+            class="add-btn"
+          >
             <q-menu anchor="bottom right" self="top right" class="custom-menu" :offset="[0, 8]">
-              <q-list style="min-width: 220px">
-                <q-item
-                  clickable
-                  v-ripple
-                  v-close-popup
-                  @click="navigate('/app/colaboradores/registrar')"
-                  class="menu-item"
-                >
-                  <q-item-section avatar>
-                    <q-icon name="person_add" color="primary" size="20px" />
-                  </q-item-section>
-                  <q-item-section>Registrar colaborador</q-item-section>
-                </q-item>
+              <q-item
+                v-if="canCrearColab"
+                clickable
+                v-ripple
+                v-close-popup
+                @click="navigate('/app/colaboradores/registrar')"
+                class="menu-item"
+              >
+                <q-item-section avatar>
+                  <q-icon name="person_add" color="primary" size="20px" />
+                </q-item-section>
+                <q-item-section>Registrar colaborador</q-item-section>
+              </q-item>
 
-                <q-item
-                  clickable
-                  v-ripple
-                  v-close-popup
-                  @click="navigate('/app/crear-vacante')"
-                  class="menu-item"
-                >
-                  <q-item-section avatar>
-                    <q-icon name="work" color="primary" size="20px" />
-                  </q-item-section>
-                  <q-item-section>Crear vacante</q-item-section>
-                </q-item>
-              </q-list>
+              <q-item
+                v-if="canCrearVacante"
+                clickable
+                v-ripple
+                v-close-popup
+                @click="navigate('/app/crear-vacante')"
+                class="menu-item"
+              >
+                <q-item-section avatar>
+                  <q-icon name="work" color="primary" size="20px" />
+                </q-item-section>
+                <q-item-section>Crear vacante</q-item-section>
+              </q-item>
             </q-menu>
           </q-btn>
 
@@ -182,7 +196,7 @@
 
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
-
+import { ACTIONS, can, canAny } from 'src/utils/permissions'
 import { useRouter, useRoute } from 'vue-router'
 
 import inicioIcon from 'assets/dashboard/home.png'
@@ -192,8 +206,27 @@ import CargaMasivaPage from 'pages/CargaMasivaPage.vue'
 
 const router = useRouter()
 const route = useRoute()
+
 const userName = ref('')
 const userRole = ref('')
+
+// ===== PERMISOS POR ROL =====
+const canCrearColab = computed(() => can(userRole.value, ACTIONS.CREAR_COLAB))
+const canCrearVacante = computed(() => can(userRole.value, ACTIONS.CREAR_VACANTE))
+const canCargaMasiva = computed(() => can(userRole.value, ACTIONS.CARGA_MASIVA))
+const canExportar = computed(() => can(userRole.value, ACTIONS.EXPORTAR_REPORTES))
+const canAuditoria = computed(() => can(userRole.value, ACTIONS.AUDITORIA))
+
+const canMostrarPlus = computed(() =>
+  canAny(userRole.value, [ACTIONS.CREAR_COLAB, ACTIONS.CREAR_VACANTE]),
+)
+
+// Drawer lateral
+const leftDrawerOpen = ref(false)
+const showCargaMasiva = ref(false)
+const toggleDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
 
 function loadUserFromToken() {
   const token = localStorage.getItem('token')
@@ -204,7 +237,6 @@ function loadUserFromToken() {
     const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'))
     const payload = JSON.parse(payloadJson)
 
-    // Posibles keys según cómo generes el JWT en .NET
     const nameKeys = ['name', 'given_name', 'unique_name', 'email', 'sub']
     const roleKeys = [
       'role',
@@ -212,7 +244,6 @@ function loadUserFromToken() {
       'http://schemas.microsoft.com/ws/2008/06/identity/claims/role',
     ]
 
-    // Nombre
     for (const k of nameKeys) {
       if (payload[k]) {
         userName.value = payload[k]
@@ -220,7 +251,6 @@ function loadUserFromToken() {
       }
     }
 
-    // Rol
     for (const k of roleKeys) {
       if (payload[k]) {
         userRole.value = Array.isArray(payload[k]) ? payload[k][0] : payload[k]
@@ -233,14 +263,13 @@ function loadUserFromToken() {
 }
 
 onMounted(() => {
+  // Si no hay token por alguna razón, rebotamos al login
+  if (!localStorage.getItem('token')) {
+    router.push({ name: 'login' })
+    return
+  }
   loadUserFromToken()
 })
-// Drawer lateral
-const leftDrawerOpen = ref(false)
-const showCargaMasiva = ref(false)
-const toggleDrawer = () => {
-  leftDrawerOpen.value = !leftDrawerOpen.value
-}
 
 // Mapa tab -> RUTA COMPLETA (incluye /app)
 const tabRouteMap = {
@@ -250,67 +279,62 @@ const tabRouteMap = {
   brechas: '/app/brechas-skill',
 }
 
-// Detecta qué tab va con la ruta actual
 function getTabFromPath(path) {
   if (path.startsWith('/app/skill-mapping')) return 'mapping'
   if (path.startsWith('/app/demanda-talento')) return 'demanda'
   if (path.startsWith('/app/brechas-skill')) return 'brechas'
-  // por defecto: Vista General
   return 'vista'
 }
 
-// Tab activa según ruta inicial
 const tab = ref(getTabFromPath(route.path))
 
-// Ocultar header (y tabs) en páginas de formulario pantalla completa
-// ej: /app/colaboradores/registrar
 const showLayout = computed(() => {
   return route.meta?.hideHeader !== true
 })
 
-// En producción esto vendría del login / store
-
-// Navegar a una ruta
 function navigate(path) {
   router.push(path)
 }
 
-// Acciones del drawer
 function goHome() {
   navigate('/app/vista-general')
   leftDrawerOpen.value = false
 }
 
 function goCargaMasiva() {
-  // abrir modal de carga masiva
   showCargaMasiva.value = true
   leftDrawerOpen.value = false
 }
 
 function goExportar() {
-  // ajusta la ruta a la que tengas creada (ej: '/app/exportar')
   navigate('/app/exportar')
   leftDrawerOpen.value = false
 }
 
 function logout() {
-  // ruta de login es '/', no '/login'
-  navigate('/')
+  // Limpiar sesión
+  localStorage.removeItem('token')
+  localStorage.removeItem('email')
+  localStorage.removeItem('rol')
+  localStorage.removeItem('usuarioId')
+  localStorage.removeItem('colaboradorId')
+  localStorage.removeItem('nombreCompleto')
+
+  router.push({ name: 'login' })
   leftDrawerOpen.value = false
 }
+
 function goAuditoria() {
   navigate('/app/auditoria')
   leftDrawerOpen.value = false
 }
 
-// Cuando haces click en una tab
 function changeTab(tabName) {
   tab.value = tabName
   const path = tabRouteMap[tabName]
   if (path) router.push(path)
 }
 
-// Si navegas por otros lados, mantenemos el tab sincronizado
 watch(
   () => route.path,
   (newPath) => {
@@ -636,8 +660,9 @@ $hover-bg: rgba(36, 105, 188, 0.12);
   .right-section {
     gap: 8px;
   }
+
   .ellipsis {
-    max-width: 130px; /* ajusta según te guste */
+    max-width: 130px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

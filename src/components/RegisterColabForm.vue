@@ -4,14 +4,7 @@
     <header class="header">
       <div class="header-inner">
         <div class="header-left">
-          <q-btn
-            flat
-            round
-            dense
-            icon="arrow_back"
-            class="back-btn"
-            @click="$router.back()"
-          />
+          <q-btn flat round dense icon="arrow_back" class="back-btn" @click="$router.back()" />
           <div class="header-text">
             <h1>Registro de nuevo Colaborador</h1>
             <p>Movilidad interna inteligente basada en skills</p>
@@ -23,6 +16,23 @@
 
     <!-- CONTENIDO BLANCO -->
     <main class="main-container">
+      <!-- HEADER LOCAL (igual estilo que Nueva Vacante) -->
+      <div class="row items-center q-mb-lg local-header">
+        <q-btn
+          flat
+          round
+          icon="arrow_back"
+          color="primary"
+          class="q-mr-sm"
+          @click="$router.back()"
+        />
+        <div>
+          <h4 class="title text-primary q-my-none">Nuevo Colaborador</h4>
+          <div class="subtitle text-grey-7">
+            Registra datos personales, skills y certificaciones
+          </div>
+        </div>
+      </div>
       <div class="content-grid">
         <!-- COLUMNA IZQUIERDA -->
         <div class="left-column">
@@ -71,6 +81,8 @@
                   outlined
                   v-model="form.password"
                   :type="showPassword ? 'password' : 'text'"
+                  :error="form.password !== '' && !passwordValid"
+                  error-message="La contraseña debe tener mínimo 8 caracteres."
                 >
                   <template #append>
                     <q-icon
@@ -185,11 +197,7 @@
               </div>
 
               <div v-else class="skills-table-body">
-                <div
-                  v-for="(skill, index) in form.skills"
-                  :key="index"
-                  class="skills-table-row"
-                >
+                <div v-for="(skill, index) in form.skills" :key="index" class="skills-table-row">
                   <div class="cell main">
                     <span>{{ skill.nombre }}</span>
                   </div>
@@ -535,14 +543,9 @@ export default {
         this.filteredAreaOptions = [...this.areaOptions]
         return
       }
-      this.filteredAreaOptions = this.areaOptions.filter(
-        (a) => a.departamentoId === newDept
-      )
+      this.filteredAreaOptions = this.areaOptions.filter((a) => a.departamentoId === newDept)
 
-      if (
-        this.form.areaId &&
-        !this.filteredAreaOptions.some((a) => a.value === this.form.areaId)
-      ) {
+      if (this.form.areaId && !this.filteredAreaOptions.some((a) => a.value === this.form.areaId)) {
         this.form.areaId = null
       }
     },
@@ -734,8 +737,8 @@ export default {
         nombre: this.skillDialog.form.nombre,
         tipoSkillId: this.skillDialog.form.tipoSkillId,
         categoria:
-          this.tipoSkillOptions.find((t) => t.value === this.skillDialog.form.tipoSkillId)
-            ?.label || this.skillDialog.form.categoria,
+          this.tipoSkillOptions.find((t) => t.value === this.skillDialog.form.tipoSkillId)?.label ||
+          this.skillDialog.form.categoria,
         nivelId: nivelInfo.value,
         nivelNombre: nivelInfo.label,
         aniosExp: this.skillDialog.form.aniosExp,
@@ -854,8 +857,7 @@ export default {
         // 1) Crear colaborador
         const res = await api.post('/api/Colaborador', payloadColaborador)
         const colaboradorCreado = res.data
-        const colaboradorId =
-          colaboradorCreado.colaboradorId ?? colaboradorCreado.ColaboradorId
+        const colaboradorId = colaboradorCreado.colaboradorId ?? colaboradorCreado.ColaboradorId
 
         // 2) Registrar skills
         if (this.form.skills.length) {
@@ -1151,5 +1153,18 @@ export default {
   .card {
     padding: 20px;
   }
+}
+.local-header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
 }
 </style>

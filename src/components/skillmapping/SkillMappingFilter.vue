@@ -25,7 +25,7 @@
         <q-list dense padding>
           <q-item
             v-for="skill in filteredSkills"
-            :key="skill.id"
+            :key="skill.skillId"
             clickable
             v-ripple
             class="skill-item-selectable"

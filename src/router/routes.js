@@ -41,8 +41,16 @@ const routes = [
       {
         path: 'brechas-skill',
         name: 'brechas-skill',
-        component: () => import('pages/IndexPage.vue'),
+        component: () => import('pages/BrechasSkillPage.vue'),
         // TODO: cambia a pages/BrechasSkillPage.vue
+      },
+      {
+        path: 'perfil-colaborador/:id',
+        name: 'perfil-colaborador',
+        component: () => import('pages/PerfilColabPage.vue'),
+        props: (route) => ({
+          colaboradorId: Number(route.params.id),
+        }),
       },
 
       // Crear vacante

@@ -299,9 +299,6 @@
               emit-value
               map-options
               label="Nombre del Skill *"
-              use-input
-              fill-input
-              input-debounce="0"
               :rules="[(val) => !!val || 'Selecciona un skill']"
               @update:model-value="onSkillSelected"
             />
@@ -380,15 +377,12 @@
               emit-value
               map-options
               label="Nombre de la certificación *"
-              use-input
-              fill-input
-              input-debounce="0"
               :rules="[(val) => !!val || 'Selecciona una certificación']"
               @update:model-value="onCertSelected"
             />
 
             <!-- Descripción (se autocompleta pero se puede editar) -->
-            <q-input
+            <q-select
               dense
               outlined
               v-model="certDialog.form.descripcion"
@@ -500,7 +494,8 @@ export default {
       return /^[0-9]{8}$/.test(this.form.dni)
     },
     emailValid() {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.correo)
+      const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+      return emailRegex.test(this.form.correo)
     },
     passwordValid() {
       return !!this.form.password && this.form.password.length >= 8
@@ -524,7 +519,7 @@ export default {
   },
 
   watch: {
-    'form.departamentoId'(newDept) {
+    'form.departamentoId': function (newDept) {
       if (!newDept) {
         this.filteredAreaOptions = [...this.areaOptions]
         return
@@ -536,7 +531,7 @@ export default {
       }
     },
 
-    'form.areaId'(newArea) {
+    'form.areaId': function (newArea) {
       if (!newArea) return
       const area = this.areaOptions.find((a) => a.value === newArea)
       if (area && area.departamentoId && this.form.departamentoId !== area.departamentoId) {
@@ -617,7 +612,10 @@ export default {
           tipoSkillId: s.tipoSkillId ?? s.TipoSkillId ?? null,
           tipoSkillNombre: s.tipoSkillNombre ?? s.TipoSkillNombre ?? '',
         }))
-        this.skillOptions = this.skillCatalog.map((s) => ({ value: s.value, label: s.label }))
+        this.skillOptions = this.skillCatalog.map((s) => ({
+          value: s.value,
+          label: s.label,
+        }))
 
         // TIPOSKILL
         this.tipoSkillOptions = (tipoRes.data ?? []).map((t) => ({
@@ -810,19 +808,6 @@ export default {
       this.certDialog.open = false
     },
 
-    onDeleteCert(index) {
-      this.$q
-        .dialog({
-          title: 'Confirmar',
-          message: '¿Seguro que deseas eliminar esta certificación?',
-          cancel: true,
-          persistent: true,
-        })
-        .onOk(() => {
-          this.form.certificaciones.splice(index, 1)
-        })
-    },
-
     // ========== SUBMIT ==========
     async onSubmit() {
       if (!this.formValid) {
@@ -864,7 +849,7 @@ export default {
         if (this.form.certificaciones.length) {
           const certPayload = this.form.certificaciones.map((c) => ({
             certificacionId: c.certificacionId,
-            fechaObtencion: c.fechaObtencion,
+            fechaObtencion: c.fechaObtencion, // 'YYYY-MM-DD'
           }))
 
           await api.post(`/api/ColaboradorCertificacion/${colaboradorId}`, certPayload)

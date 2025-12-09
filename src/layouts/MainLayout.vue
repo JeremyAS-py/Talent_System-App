@@ -49,6 +49,14 @@
             <q-item-section>Exportar</q-item-section>
           </q-item>
 
+        <!-- APROBACIÓN -->
+          <q-item clickable v-ripple class="drawer-item" @click="goAprobacion">
+            <q-item-section avatar>
+              <q-icon name="fact_check" size="22px" class="drawer-icon-icon" />
+            </q-item-section>
+            <q-item-section>Aprobación</q-item-section>
+          </q-item>
+
           <!-- AUDITORÍA (solo Admin) -->
           <q-item v-if="canAuditoria" clickable v-ripple class="drawer-item" @click="goAuditoria">
             <q-item-section avatar>
@@ -57,6 +65,7 @@
             <q-item-section>Auditoría</q-item-section>
           </q-item>
         </q-list>
+
 
         <!-- CERRAR SESIÓN ABAJO -->
         <div class="drawer-footer q-px-lg q-pb-lg q-pt-md">
@@ -283,6 +292,7 @@ function getTabFromPath(path) {
   if (path.startsWith('/app/skill-mapping')) return 'mapping'
   if (path.startsWith('/app/demanda-talento')) return 'demanda'
   if (path.startsWith('/app/brechas-skill')) return 'brechas'
+  // por defecto: Vista General
   return 'vista'
 }
 
@@ -333,6 +343,11 @@ function changeTab(tabName) {
   tab.value = tabName
   const path = tabRouteMap[tabName]
   if (path) router.push(path)
+}
+
+function goAprobacion() {
+  navigate('/app/aprobacion-postulaciones')
+  leftDrawerOpen.value = false
 }
 
 watch(

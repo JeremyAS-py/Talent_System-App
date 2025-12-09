@@ -68,8 +68,7 @@ const routes = [
         },
       },
 
-      // 5) PERFIL COLABORADOR
-      //    Aquí todos pueden VER, pero en el front luego le bloqueas edición al BM.
+      // 5) PERFIL COLABORADOR – todos ven (BM solo lectura en el front)
       {
         path: 'perfil-colaborador/:id',
         name: 'perfil-colaborador',
@@ -94,7 +93,18 @@ const routes = [
         },
       },
 
-      // 7) REGISTRAR COLABORADOR – solo Admin y RRHH
+      // 7) APROBACIÓN POSTULACIONES – solo Admin y RRHH
+      {
+        path: 'aprobacion-postulaciones',
+        name: 'aprobacion-postulaciones',
+        component: () => import('pages/AprobacionPostulacionesPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+        },
+      },
+
+      // 8) REGISTRAR COLABORADOR – solo Admin y RRHH
       {
         path: 'colaboradores/registrar',
         name: 'registrar-colaborador',
@@ -102,10 +112,12 @@ const routes = [
         meta: {
           requiresAuth: true,
           allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+          hideHeader: true, // si quieres ocultar header en esta vista
         },
+        // TODO: cuando exista, cambia a pages/RegistrarColaboradorPage.vue
       },
 
-      // 8) AUDITORÍA – solo Admin
+      // 9) AUDITORÍA – solo Admin
       {
         path: 'auditoria',
         name: 'auditoria',

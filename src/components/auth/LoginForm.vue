@@ -69,11 +69,11 @@
   color: white;
   box-shadow: 10px 0px 40px rgba(0, 0, 0, 0.25);
   display: flex;
-  justify-content: center; /* centra verticalmente (porque column) */
-  align-items: center; /* centra horizontalmente */
+  justify-content: center;
+  align-items: center;
 }
 .hero-icons {
-  margin-top: -5rem; /* más cerca del texto */
+  margin-top: -5rem;
 }
 
 .left-panel h1 {
@@ -104,7 +104,7 @@ export default {
     return {
       email: '',
       password: '',
-      isPwd: true, // para mostrar/ocultar contraseña
+      isPwd: true,
       loading: false,
     }
   },
@@ -121,19 +121,15 @@ export default {
 
       this.loading = true
       try {
-        const endpointURL = '/api/auth/login' // ajusta si tu backend usa otro prefijo
+        const endpointURL = '/api/auth/login'
         const userData = {
           email: this.email,
           password: this.password,
         }
 
         const response = await this.$api.post(endpointURL, userData)
+        const data = response.data // { token, email, rol, usuarioId, colaboradorId, nombreCompleto }
 
-        // El backend devuelve AuthResponseDto:
-        // { token, email, rol, usuarioId, colaboradorId, nombreCompleto }
-        const data = response.data
-
-        // Guarda lo que necesites en localStorage (o Pinia)
         localStorage.setItem('token', data.token)
         localStorage.setItem('email', data.email)
         localStorage.setItem('rol', data.rol)
@@ -151,8 +147,8 @@ export default {
           position: 'bottom',
         })
 
-        // Redirigir al layout principal
-        this.$router.push('/app/vista-general')
+        // Redirigir usando el name de la ruta
+        this.$router.push({ name: 'vista-general' })
       } catch (error) {
         const msg =
           error.response?.data?.message || 'Credenciales inválidas o error en el servidor.'

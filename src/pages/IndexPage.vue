@@ -1,7 +1,6 @@
 <template>
   <q-page class="bg-page q-pa-lg page-auto">
-
-    <!-- TITULO + DESCRIPCIÓN -->
+    <!-- TÍTULO -->
     <div class="q-mb-xl">
       <div class="page-title">Vista General</div>
       <div class="page-subtitle">
@@ -11,31 +10,107 @@
 
     <!-- =================== CARDS SUPERIORES =================== -->
     <div class="row q-col-gutter-md q-mb-xl">
-      <div
-        v-for="card in summaryCards"
-        :key="card.id"
-        class="col-12 col-sm-6 col-lg-3"
-      >
+      <!-- Colaboradores activos -->
+      <div class="col-12 col-sm-6 col-lg-3">
         <q-card class="summary-card q-pa-lg">
           <div class="row items-start no-wrap">
             <div class="summary-icon">
-              <img :src="card.icon" :alt="card.title" />
+              <img :src="personasIcon" alt="Colaboradores activos" />
             </div>
 
             <div class="q-ml-md" style="flex: 1;">
-              <div class="summary-label">{{ card.title }}</div>
-              <div class="summary-value">{{ card.value }}</div>
+              <div class="summary-label">Colaboradores activos</div>
+              <div class="summary-value">
+                {{ summary.colaboradoresActivos }}
+              </div>
 
-              <!-- helper + trend -->
               <div class="summary-footer">
                 <span class="summary-helper">
-                  {{ card.helper }}
+                  Skills totales mapeados: {{ summary.skillsMapeados }}
                 </span>
-                <span
-                  class="summary-trend"
-                  :class="card.trendPositive ? 'trend-positive' : 'trend-negative'"
-                >
-                  {{ card.trend }}
+                <span class="summary-trend trend-positive">
+                  +12%
+                </span>
+              </div>
+            </div>
+          </div>
+        </q-card>
+      </div>
+
+      <!-- Vacantes cubiertas internamente -->
+      <div class="col-12 col-sm-6 col-lg-3">
+        <q-card class="summary-card q-pa-lg">
+          <div class="row items-start no-wrap">
+            <div class="summary-icon">
+              <img :src="vacanteIcon" alt="Vacantes cubiertas" />
+            </div>
+
+            <div class="q-ml-md" style="flex: 1;">
+              <div class="summary-label">Vacantes cubiertas internamente</div>
+              <div class="summary-value">
+                {{ summary.vacantesCubiertasInternamente }}/{{ summary.vacantesTotales }}
+              </div>
+
+              <div class="summary-footer">
+                <span class="summary-helper">
+                  Último trimestre
+                </span>
+                <span class="summary-trend trend-positive">
+                  +8%
+                </span>
+              </div>
+            </div>
+          </div>
+        </q-card>
+      </div>
+
+      <!-- Cobertura skills críticos -->
+      <div class="col-12 col-sm-6 col-lg-3">
+        <q-card class="summary-card q-pa-lg">
+          <div class="row items-start no-wrap">
+            <div class="summary-icon">
+              <img :src="tendenciaIcon" alt="Cobertura skills críticos" />
+            </div>
+
+            <div class="q-ml-md" style="flex: 1;">
+              <div class="summary-label">Cobertura de skills críticos</div>
+              <div class="summary-value">
+                {{ summary.coberturaSkillsCriticos }}%
+              </div>
+
+              <div class="summary-footer">
+                <span class="summary-helper">
+                  Top skills estratégicos
+                </span>
+                <span class="summary-trend trend-positive">
+                  +5%
+                </span>
+              </div>
+            </div>
+          </div>
+        </q-card>
+      </div>
+
+      <!-- Skill gaps críticos -->
+      <div class="col-12 col-sm-6 col-lg-3">
+        <q-card class="summary-card q-pa-lg">
+          <div class="row items-start no-wrap">
+            <div class="summary-icon">
+              <img :src="busquedaIcon" alt="Skill gaps críticos" />
+            </div>
+
+            <div class="q-ml-md" style="flex: 1;">
+              <div class="summary-label">Skill gaps críticos</div>
+              <div class="summary-value">
+                {{ summary.skillGapsCriticos }}
+              </div>
+
+              <div class="summary-footer">
+                <span class="summary-helper">
+                  Requieren atención inmediata
+                </span>
+                <span class="summary-trend trend-negative">
+                  -7%
                 </span>
               </div>
             </div>
@@ -47,7 +122,7 @@
     <!-- =================== BLOQUE CENTRAL =================== -->
     <div class="row q-col-gutter-md">
 
-      <!-- Skill Mapping -->
+      <!-- Skill Mapping por colaborador (resumen) -->
       <div class="col-12 col-lg-7 col-xl-8">
         <q-card class="panel-card q-pa-lg">
 
@@ -68,14 +143,13 @@
                 :options="departamentoOptions"
                 emit-value
                 map-options
-                style="min-width: 200px;"
+                style="min-width: 220px;"
               >
-                <template v-slot:prepend>
+                <template #prepend>
                   <q-icon name="folder" size="18px" />
                 </template>
               </q-select>
 
-              <!-- Botón Filtrar alineado con el select -->
               <q-btn
                 outline
                 color="grey-6"
@@ -83,120 +157,129 @@
                 no-caps
               >
                 <div class="row items-center no-wrap">
-                  <img
-                    :src="filtrarIcon"
-                    alt="Filtrar"
-                    class="btn-filter-icon"
-                  />
+                  <img :src="filtrarIcon" alt="Filtrar" class="btn-filter-icon" />
                   <span class="filter-label">Filtrar</span>
                 </div>
               </q-btn>
             </div>
           </div>
 
-          <!-- Encabezados -->
-          <div class="row table-header q-py-md q-px-sm">
-            <div class="col-3">Colaborador</div>
-            <div class="col-2">Rol</div>
-            <div class="col-3">Skills clave</div>
-            <div class="col-2">Cobertura</div>
-            <div class="col-1 text-center">Movilidad</div>
-            <div class="col-1 text-center">Acciones</div>
+          <!-- Estados de carga -->
+          <div v-if="loading" class="text-center q-pa-xl">
+            <q-spinner-dots color="primary" size="40px" />
+            <p class="q-mt-md">Cargando colaboradores...</p>
           </div>
-          <q-separator />
+          <div v-else-if="error" class="text-center text-negative q-pa-xl">
+            <q-icon name="error_outline" size="40px" />
+            <p class="q-mt-md">{{ error }}</p>
+          </div>
 
-          <!-- Filas -->
-          <div
-            v-for="colab in colaboradoresFiltrados"
-            :key="colab.id"
-            class="row table-row items-center q-py-md q-px-sm"
-          >
-            <!-- Nombre + Área -->
-            <div class="col-3">
-              <div class="text-body2 text-weight-bold name-text">
-                {{ colab.nombre }}
+          <!-- Tabla -->
+          <template v-else>
+            <!-- Encabezados -->
+            <div class="row table-header q-py-md q-px-sm">
+              <div class="col-3">Colaborador</div>
+              <div class="col-2">Rol</div>
+              <div class="col-3">Skills clave</div>
+              <div class="col-2">Cobertura</div>
+              <div class="col-1 text-center">Movilidad</div>
+              <div class="col-1 text-center">Acciones</div>
+            </div>
+            <q-separator />
+
+            <!-- Filas (máximo 4 mejores) -->
+            <div
+              v-for="colab in colaboradoresTop"
+              :key="colab.id"
+              class="row table-row items-center q-py-md q-px-sm"
+            >
+              <!-- Nombre + Área -->
+              <div class="col-3">
+                <div class="text-body2 text-weight-bold name-text">
+                  {{ colab.nombre }}
+                </div>
+                <div class="text-caption area-text">
+                  {{ colab.area }}
+                </div>
               </div>
-              <div class="text-caption area-text">
-                {{ colab.area }}
+
+              <!-- Rol -->
+              <div class="col-2 rol-text">
+                {{ colab.rol }}
+              </div>
+
+              <!-- Skills clave -->
+              <div class="col-3 skills-cell">
+                <q-chip
+                  v-for="skill in colab.skills"
+                  :key="skill"
+                  dense
+                  color="primary"
+                  text-color="white"
+                  class="skill-chip"
+                >
+                  {{ skill }}
+                </q-chip>
+              </div>
+
+              <!-- Cobertura + barra -->
+              <div class="col-2">
+                <div class="cobertura-text">{{ colab.cobertura }}%</div>
+                <q-linear-progress
+                  :value="colab.cobertura / 100"
+                  color="primary"
+                  track-color="grey-3"
+                  size="7px"
+                  rounded
+                />
+                <div class="text-caption skills-count">
+                  {{ colab.totalSkills }} skills
+                </div>
+              </div>
+
+              <!-- Movilidad -->
+              <div class="col-1 flex flex-center">
+                <q-chip
+                  dense
+                  square
+                  :color="colab.movilidad ? 'positive' : 'grey-4'"
+                  :text-color="colab.movilidad ? 'white' : 'grey-8'"
+                  class="movilidad-chip"
+                >
+                  {{ colab.movilidad ? 'SI' : 'NO' }}
+                </q-chip>
+              </div>
+
+              <!-- Botón Ver Perfil (placeholder) -->
+              <div class="col-1 flex flex-center">
+                <q-btn
+                  flat
+                  color="primary"
+                  dense
+                  style="font-size: 12px;"
+                  label="Ver perfil"
+                />
               </div>
             </div>
 
-            <!-- Rol -->
-            <div class="col-2 rol-text">
-              {{ colab.rol }}
-            </div>
-
-            <!-- Skills clave -->
-            <div class="col-3 skills-cell">
-              <q-chip
-                v-for="skill in colab.skills"
-                :key="skill"
-                dense
-                color="primary"
-                text-color="white"
-                class="skill-chip"
-              >
-                {{ skill }}
-              </q-chip>
-            </div>
-
-            <!-- Cobertura + barra -->
-            <div class="col-2">
-              <div class="cobertura-text">{{ colab.cobertura }}%</div>
-              <q-linear-progress
-                :value="colab.cobertura / 100"
-                color="primary"
-                track-color="grey-3"
-                size="7px"
-                rounded
-              />
-              <div class="text-caption skills-count">
-                {{ colab.totalSkills }} skills
-              </div>
-            </div>
-
-            <!-- Movilidad -->
-            <div class="col-1 flex flex-center">
-              <q-chip
-                dense
-                square
-                :color="colab.movilidad ? 'positive' : 'grey-4'"
-                :text-color="colab.movilidad ? 'white' : 'grey-8'"
-                class="movilidad-chip"
-              >
-                {{ colab.movilidad ? 'SI' : 'NO' }}
-              </q-chip>
-            </div>
-
-            <!-- Botón Ver Perfil -->
-            <div class="col-1 flex flex-center">
+            <!-- Botón Ver más -->
+            <div class="row justify-center q-mt-lg" v-if="colaboradoresTop.length">
               <q-btn
-                flat
+                unelevated
                 color="primary"
-                dense
-                style="font-size: 12px;"
-                label="Ver perfil"
+                label="Ver Más"
+                class="q-px-xl"
+                style="text-transform: none; font-weight: 600;"
               />
             </div>
-          </div>
-
-          <!-- Botón Ver más -->
-          <div class="row justify-center q-mt-lg">
-            <q-btn
-              unelevated
-              color="primary"
-              label="Ver Más"
-              class="q-px-xl"
-              style="text-transform: none; font-weight: 600;"
-            />
-          </div>
-
+          </template>
         </q-card>
       </div>
 
-      <!-- Derecha: Demanda + Gaps -->
+      <!-- Derecha: Demanda + Skill Gaps -->
       <div class="col-12 col-lg-5 col-xl-4">
-        <!-- Demanda -->
+
+        <!-- Demanda de talento (top 2 vacantes abiertas) -->
         <q-card class="panel-card compact-card q-mb-md">
           <q-card-section class="q-pb-md">
             <div class="row justify-between items-center">
@@ -205,7 +288,7 @@
                 Demanda de talento
               </div>
               <q-badge color="primary" outline>
-                {{ demandas.length }} vacantes
+                {{ vacantesAbiertas }} vacantes
               </q-badge>
             </div>
             <div class="panel-subtitle">
@@ -236,7 +319,7 @@
                 <strong>Inicio:</strong> {{ vac.inicio }}
               </div>
               <div class="vac-desc">
-                <strong>Skills clave:</strong> {{ vac.skills }}
+                <strong>Skills clave:</strong> {{ vac.skillsResumen }}
               </div>
 
               <div class="row justify-between items-center q-mt-sm">
@@ -245,6 +328,10 @@
                 </div>
                 <q-btn flat dense color="primary" label="Ver detalle" />
               </div>
+            </div>
+
+            <div v-if="!demandas.length" class="text-center text-grey-7">
+              No hay vacantes abiertas.
             </div>
           </q-card-section>
 
@@ -258,7 +345,7 @@
           </q-card-actions>
         </q-card>
 
-        <!-- Gaps -->
+        <!-- Skill Gaps (usando /api/exportacion/brechas de la vacante más urgente) -->
         <q-card class="panel-card compact-card">
           <q-card-section class="q-pb-md">
             <div class="panel-title row items-center">
@@ -267,34 +354,48 @@
             </div>
             <div class="panel-subtitle">
               Skills con mayor brecha entre oferta y demanda
+              <span v-if="vacanteBrechasTitulo">
+                · {{ vacanteBrechasTitulo }}
+              </span>
             </div>
           </q-card-section>
 
           <q-separator class="q-mb-md" />
 
           <q-card-section>
-            <div
-              v-for="gap in skillGaps"
-              :key="gap.id"
-              class="q-mb-md"
-            >
-              <div class="row justify-between items-center q-mb-sm">
-                <div class="gap-skill">{{ gap.skill }}</div>
-                <span class="gap-num">-{{ gap.brecha }}</span>
-              </div>
-
-              <q-linear-progress
-                :value="gap.porcentaje / 100"
-                color="negative"
-                track-color="grey-3"
-                size="8px"
-                rounded
-              />
-
-              <div class="gap-detalle">
-                Disponible: {{ gap.disponible }} · Requerido: {{ gap.requerido }}
-              </div>
+            <div v-if="loadingBrechas" class="text-center q-py-md">
+              <q-spinner-dots color="primary" size="30px" />
+              <div class="q-mt-sm text-grey-7">Calculando brechas...</div>
             </div>
+
+            <template v-else>
+              <div
+                v-for="gap in skillGaps"
+                :key="gap.skill"
+                class="q-mb-md"
+              >
+                <div class="row justify-between items-center q-mb-sm">
+                  <div class="gap-skill">{{ gap.skill }}</div>
+                  <span class="gap-num">-{{ gap.brecha }}</span>
+                </div>
+
+                <q-linear-progress
+                  :value="gap.porcentaje / 100"
+                  color="negative"
+                  track-color="grey-3"
+                  size="8px"
+                  rounded
+                />
+
+                <div class="gap-detalle">
+                  Disponible: {{ gap.disponible }} · Requerido: {{ gap.requerido }}
+                </div>
+              </div>
+
+              <div v-if="!skillGaps.length" class="text-center text-grey-7">
+                No se encontró información de brechas para la vacante seleccionada.
+              </div>
+            </template>
           </q-card-section>
 
           <q-card-actions align="right">
@@ -309,178 +410,328 @@
 
       </div>
     </div>
-
   </q-page>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { api } from 'boot/axios'
+import * as XLSX from 'xlsx'
 
-// ICONOS
+// ICONOS KPI
 import personasIcon from 'assets/dashboard/personas.png'
 import vacanteIcon from 'assets/dashboard/vacante.png'
 import tendenciaIcon from 'assets/dashboard/tendencia.png'
 import busquedaIcon from 'assets/dashboard/busqueda.png'
+// Icono botón filtrar (bloque izquierdo)
 import filtrarIcon from 'assets/dashboard/filtrar.png'
 
-/* ====== CARDS ====== */
-const summaryCards = [
-  {
-    id: 'colaboradores',
-    title: 'Colaboradores activos',
-    value: '100',
-    helper: 'Skills totales mapeados: 1,482',
-    trend: '+12%',
-    trendPositive: true,
-    icon: personasIcon
-  },
-  {
-    id: 'vacantes',
-    title: 'Vacantes cubiertas internamente',
-    value: '10/30',
-    helper: 'Último trimestre',
-    trend: '+8%',
-    trendPositive: true,
-    icon: vacanteIcon
-  },
-  {
-    id: 'cobertura',
-    title: 'Cobertura de skills críticos',
-    value: '80%',
-    helper: 'Top 50 skills estratégicos',
-    trend: '+5%',
-    trendPositive: true,
-    icon: tendenciaIcon
-  },
-  {
-    id: 'gaps',
-    title: 'Skill gaps críticos',
-    value: '12',
-    helper: 'Requieren atención inmediata',
-    trend: '-7%',
-    trendPositive: false,
-    icon: busquedaIcon
-  }
-]
+/* ====== ESTADO GENERAL ====== */
+const loading = ref(true)
+const error = ref(null)
 
-/* ====== COLABORADORES ====== */
-const colaboradores = ref([
-  {
-    id: 1,
-    nombre: 'Juan Pérez',
-    area: 'Marketing · IT',
-    rol: 'PROJECT MANAGER',
-    skills: ['Liderazgo', 'Agile', 'Comunicación'],
-    cobertura: 95,
-    totalSkills: 18,
-    movilidad: true,
-    departamento: 'Todos los departamentos'
-  },
-  {
-    id: 2,
-    nombre: 'Luis Chang',
-    area: 'IT · Tecnología',
-    rol: 'FULL STACK',
-    skills: ['Node.js', 'UI Design', 'SQL'],
-    cobertura: 88,
-    totalSkills: 15,
-    movilidad: true,
-    departamento: 'Tecnología'
-  },
-  {
-    id: 3,
-    nombre: 'José Ballón',
-    area: 'IT · Ciencia de Datos',
-    rol: 'DATA SCIENTIST',
-    skills: ['Python', 'SQL', 'Machine Learning'],
-    cobertura: 92,
-    totalSkills: 17,
-    movilidad: true,
-    departamento: 'Tecnología'
-  },
-  {
-    id: 4,
-    nombre: 'Ana Rojas',
-    area: 'HR Business Partner',
-    rol: 'HR BUSINESS PARTNER',
-    skills: ['Comunicación', 'Trabajo en equipo'],
-    cobertura: 80,
-    totalSkills: 12,
-    movilidad: false,
-    departamento: 'Recursos Humanos'
-  }
+const colaboradores = ref([])
+const vacantes = ref([])
+
+const departamentos = ref([])
+const departamentoOptions = ref([
+  { label: 'Todos los departamentos', value: null }
 ])
+const filtroDepartamento = ref(null)
 
-const departamentoOptions = [
-  { label: 'Todos los departamentos', value: 'Todos los departamentos' },
-  { label: 'Tecnología', value: 'Tecnología' },
-  { label: 'Recursos Humanos', value: 'Recursos Humanos' }
-]
-
-const filtroDepartamento = ref('Todos los departamentos')
-
-const colaboradoresFiltrados = computed(() => {
-  if (filtroDepartamento.value === 'Todos los departamentos') {
-    return colaboradores.value
-  }
-  return colaboradores.value.filter(
-    c => c.departamento === filtroDepartamento.value
-  )
+/* ====== RESUMEN KPIs ====== */
+const summary = ref({
+  colaboradoresActivos: 0,
+  skillsMapeados: 0,
+  vacantesTotales: 0,
+  vacantesCubiertasInternamente: 0,
+  coberturaSkillsCriticos: 0,
+  skillGapsCriticos: 0
 })
 
-/* ====== DEMANDA ====== */
-const demandas = [
-  {
-    id: 1,
-    puesto: 'Senior Engineer Backend',
-    area: 'Desarrollo Backend · Tecnología',
-    urgencia: 'ALTA',
-    urgenciaColor: 'negative',
-    proyecto: 'Proyecto DataHub',
-    inicio: '01/04/2025',
-    skills: 'Node.js, Microservicios, SQL',
-    candidatos: 1
-  },
-  {
-    id: 2,
-    puesto: 'Data Scientist',
-    area: 'Data & Analytics · Tecnología',
-    urgencia: 'MEDIA',
-    urgenciaColor: 'warning',
-    proyecto: 'Proyecto Retail Analytics',
-    inicio: '15/05/2025',
-    skills: 'Python, ML, Cloud',
-    candidatos: 2
-  }
-]
+/* ====== DEMANDA (panel derecho) ====== */
+const demandas = ref([])
+const vacantesAbiertas = computed(
+  () => vacantes.value.filter(v => !v.estado || v.estado.toLowerCase() === 'abierta').length
+)
 
-/* ====== GAPS ====== */
-const skillGaps = [
-  {
-    id: 1,
-    skill: 'Python',
-    disponible: 45,
-    requerido: 60,
-    brecha: 15,
-    porcentaje: 75
-  },
-  {
-    id: 2,
-    skill: 'R',
-    disponible: 12,
-    requerido: 25,
-    brecha: 13,
-    porcentaje: 48
-  },
-  {
-    id: 3,
-    skill: 'Machine Learning',
-    disponible: 45,
-    requerido: 60,
-    brecha: 15,
-    porcentaje: 75
+/* ====== SKILL GAPS (panel derecho) ====== */
+const skillGaps = ref([])
+const loadingBrechas = ref(false)
+const vacanteBrechasTitulo = ref('')
+
+/* ==== helpers ==== */
+function mapUrgencia (nombre) {
+  const n = (nombre || '').toLowerCase()
+  if (n === 'alta') return { label: 'ALTA', color: 'negative' }
+  if (n === 'media') return { label: 'MEDIA', color: 'warning' }
+  if (n === 'baja') return { label: 'BAJA', color: 'info' }
+  return { label: nombre || 'SIN PRIORIDAD', color: 'grey-5' }
+}
+
+/* ====== CARGA PRINCIPAL DASHBOARD ====== */
+async function cargarDashboard () {
+  try {
+    loading.value = true
+    error.value = null
+
+    const [colabRes, vacRes, depRes, areaRes] = await Promise.all([
+      api.get('/api/Colaborador'),
+      api.get('/api/vacante'),
+      api.get('/api/Departamento'),
+      api.get('/api/Area/areas')
+    ])
+
+    const colabData = colabRes.data || []
+    const vacData = vacRes.data || []
+    const depData = depRes.data || []
+    const areaData = areaRes.data || []
+
+    departamentos.value = depData
+
+    // Lookups para armar texto de área
+    const depLookup = new Map(
+      depData.map(d => [Number(d.departamentoId), d])
+    )
+    const areaLookup = new Map(
+      areaData.map(a => [Number(a.areaId), a])
+    )
+
+    /* ---- Colaboradores ---- */
+    colaboradores.value = colabData.map(c => {
+      const dep = depLookup.get(Number(c.departamentoId))
+      const area = areaLookup.get(Number(c.areaId))
+
+      const fullName = `${c.nombres || ''} ${c.apellidos || ''}`.trim()
+      const areaText = [
+        dep?.nombre,
+        area?.nombre
+      ].filter(Boolean).join(' · ')
+
+      const skillsArr = Array.isArray(c.skills) ? c.skills : []
+
+      const cobertura =
+        c.coberturaGlobal ??
+        c.cobertura ??
+        c.porcentajeCobertura ??
+        Math.min(100, (skillsArr.length || 0) * 5)
+
+      return {
+        id: c.colaboradorId || c.id,
+        nombre: fullName || c.nombre || '—',
+        area: areaText || '—',
+        rol: c.rolNombre || c.rol || '—',
+        skills: skillsArr.slice(0, 3),
+        totalSkills: skillsArr.length,
+        cobertura: Math.round(cobertura),
+        movilidad: c.disponibleMovilidad ?? false,
+        departamentoId: c.departamentoId ? Number(c.departamentoId) : null
+      }
+    })
+
+    // Opciones de departamento para el filtro
+    departamentoOptions.value = [
+      { label: 'Todos los departamentos', value: null },
+      ...depData.map(d => ({
+        label: d.nombre,
+        value: Number(d.departamentoId)
+      }))
+    ]
+
+    // Métricas colaboradores
+    summary.value.colaboradoresActivos = colaboradores.value.length
+    summary.value.skillsMapeados = colaboradores.value.reduce(
+      (acc, c) => acc + (c.totalSkills || 0),
+      0
+    )
+
+    /* ---- Vacantes ---- */
+    const mapeadas = vacData.map(v => {
+      const urg = mapUrgencia(v.urgenciaNombre)
+      return {
+        id: v.vacanteId,
+        puesto: v.titulo,
+        area: v.perfilNombre,
+        urgencia: urg.label,
+        urgenciaColor: urg.color,
+        estado: v.estado,
+        proyecto: v.proyectoNombre || 'Proyecto no especificado',
+        inicio: v.fechaInicio
+          ? new Date(v.fechaInicio).toLocaleDateString()
+          : 'Sin fecha',
+        skillsRequeridos: []
+      }
+    })
+
+    vacantes.value = mapeadas
+
+    summary.value.vacantesTotales = mapeadas.length
+    // Aproximación: consideramos "cubiertas" las que NO están abiertas
+    summary.value.vacantesCubiertasInternamente = mapeadas.filter(
+      v => v.estado && v.estado.toLowerCase() !== 'abierta'
+    ).length
+
+    // Orden de urgencia para escoger top vacantes abiertas
+    const ordenUrgencia = { ALTA: 1, MEDIA: 2, BAJA: 3 }
+
+    const abiertasOrdenadas = mapeadas
+      .filter(v => !v.estado || v.estado.toLowerCase() === 'abierta')
+      .sort((a, b) => {
+        const aRank = ordenUrgencia[a.urgencia] ?? 99
+        const bRank = ordenUrgencia[b.urgencia] ?? 99
+        return aRank - bRank
+      })
+
+    // Tomamos máximo 2 vacantes para el panel derecho
+    demandas.value = abiertasOrdenadas.slice(0, 2).map(v => ({
+      ...v,
+      skillsResumen: 'Cargando...',
+      candidatos: 0
+    }))
+
+    // Cargamos skills requeridos solo de estas vacantes
+    await Promise.all(
+      demandas.value.map(async vac => {
+        try {
+          const resSkillsReq = await api.get(`/api/vacante/${vac.id}/skills`)
+          const reqs = resSkillsReq.data || []
+          const skillsNombres = reqs
+            .map(r => r.skillNombre || r.skillName)
+            .filter(Boolean)
+          vac.skillsResumen = skillsNombres.join(', ')
+        } catch (err) {
+          console.error('Error cargando skills de vacante', vac.id, err)
+          vac.skillsResumen = '—'
+        }
+      })
+    )
+
+    // Escogemos la vacante más urgente para calcular skill gaps
+    if (demandas.value.length) {
+      const vac = demandas.value[0]
+      vacanteBrechasTitulo.value = vac.puesto
+      await cargarSkillGapsDesdeExcel(vac.id)
+    } else {
+      skillGaps.value = []
+      summary.value.coberturaSkillsCriticos = 0
+      summary.value.skillGapsCriticos = 0
+    }
+  } catch (err) {
+    console.error('Error cargando dashboard:', err)
+    error.value =
+      err.message ||
+      'No se pudo cargar la información. Verifique la conexión con la API.'
+  } finally {
+    loading.value = false
   }
-]
+}
+
+/* ====== SKILL GAPS usando /api/exportacion/brechas ====== */
+async function cargarSkillGapsDesdeExcel (vacanteId) {
+  loadingBrechas.value = true
+  skillGaps.value = []
+  try {
+    const params = {
+      vacanteId,
+      areaId: null
+    }
+
+    const response = await api.get('/api/exportacion/brechas', {
+      params,
+      responseType: 'arraybuffer'
+    })
+
+    const data = new Uint8Array(response.data)
+    const workbook = XLSX.read(data, { type: 'array' })
+    const sheetName = workbook.SheetNames[0]
+    const worksheet = workbook.Sheets[sheetName]
+
+    const json = XLSX.utils.sheet_to_json(worksheet, {
+      header: ['candidato', 'skill', 'disponible', 'requerido', 'brecha'],
+      range: 4
+    })
+
+    // Agregamos por skill
+    const map = new Map()
+    json.forEach(row => {
+      const skill = row.skill
+      if (!skill) return
+      const disponible = Number(row.disponible) || 0
+      const requerido = Number(row.requerido) || 0
+      const brechaRow =
+        row.brecha != null && row.brecha !== ''
+          ? Number(row.brecha) || 0
+          : requerido - disponible
+
+      if (!map.has(skill)) {
+        map.set(skill, {
+          skill,
+          disponible: 0,
+          requerido: 0,
+          brecha: 0
+        })
+      }
+      const agg = map.get(skill)
+      agg.disponible += disponible
+      agg.requerido += requerido
+      agg.brecha += brechaRow
+    })
+
+    const agregados = Array.from(map.values())
+      .filter(g => g.requerido > 0)
+      .sort((a, b) => Math.abs(b.brecha) - Math.abs(a.brecha))
+
+    const top3 = agregados.slice(0, 3).map(g => {
+      const porcentaje =
+        g.requerido > 0
+          ? Math.max(0, Math.min(100, (g.disponible / g.requerido) * 100))
+          : 0
+      return {
+        ...g,
+        porcentaje: Math.round(porcentaje)
+      }
+    })
+
+    skillGaps.value = top3
+    summary.value.skillGapsCriticos = top3.length
+
+    if (top3.length) {
+      const promedioCobertura =
+        top3.reduce((acc, g) => acc + g.porcentaje, 0) / top3.length
+      summary.value.coberturaSkillsCriticos = Math.round(promedioCobertura)
+    } else {
+      summary.value.coberturaSkillsCriticos = 0
+    }
+  } catch (err) {
+    console.error('Error cargando brechas desde Excel:', err)
+    skillGaps.value = []
+    summary.value.coberturaSkillsCriticos = 0
+    summary.value.skillGapsCriticos = 0
+  } finally {
+    loadingBrechas.value = false
+  }
+}
+
+/* ====== COLABORADORES FILTRADOS (TOP 4) ====== */
+const colaboradoresFiltrados = computed(() => {
+  let lista = colaboradores.value
+  if (filtroDepartamento.value) {
+    lista = lista.filter(
+      c => c.departamentoId === filtroDepartamento.value
+    )
+  }
+  // Ordenar por cobertura descendente
+  lista = [...lista].sort((a, b) => (b.cobertura || 0) - (a.cobertura || 0))
+  return lista
+})
+
+// En la tabla mostramos solo los 4 mejores
+const colaboradoresTop = computed(() =>
+  colaboradoresFiltrados.value.slice(0, 4)
+)
+
+/* ====== INIT ====== */
+onMounted(cargarDashboard)
 </script>
 
 <style scoped>
@@ -654,7 +905,7 @@ const skillGaps = [
 
 /* Botón de Filtrar alineado con el q-select */
 .filter-btn {
-  height: 40px;               /* similar al alto del q-select dense */
+  height: 40px;
   border-radius: 8px;
   padding: 0 12px;
   display: inline-flex;
@@ -671,7 +922,7 @@ const skillGaps = [
 /* Texto del botón Filtrar */
 .filter-label {
   font-size: 14px;
-  color: #374151;             /* gris oscuro, como el texto del select */
+  color: #374151;
 }
 
 /* VACANTES */

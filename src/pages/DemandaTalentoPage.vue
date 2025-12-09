@@ -510,9 +510,16 @@ onMounted(cargarData)
 
 // ======== FILTRADO ========
 const vacantesFiltradas = computed(() => {
+  const ordenUrgencia = {
+    'URGENTE': 1,     // por si algún día llega así
+    'MEDIA': 2,
+    'BAJA': 3
+  }
+
   return vacantes.value
     // Solo mostrar vacantes abiertas en Demanda de Talento
     .filter(v => !v.estado || v.estado.toLowerCase() === 'abierta')
+    // filtros
     .filter(v => {
       const texto = (filtroTexto.value || '').toLowerCase()
 
@@ -534,7 +541,18 @@ const vacantesFiltradas = computed(() => {
 
       return matchTexto && matchDepto && matchRol && matchSkill
     })
+    // ✅ ORDEN: urgente -> media -> baja
+    .sort((a, b) => {
+      const aRank = ordenUrgencia[a.urgencia] ?? 99
+      const bRank = ordenUrgencia[b.urgencia] ?? 99
+
+      if (aRank !== bRank) return aRank - bRank
+
+      // desempate opcional: por título
+      return (a.puesto || '').localeCompare(b.puesto || '')
+    })
 })
+
 
 // ======== MÉTRICAS RESUMEN ========
 const totalVacantes = computed(() => vacantesFiltradas.value.length)
@@ -560,10 +578,38 @@ function exportarVacantes () {
   console.log('Exportar vacantes (pendiente de definir endpoint)')
 }
 
-function exportarVacante (vacId) {
-  const base = api.defaults.baseURL || 'http://localhost:5066'
-  window.open(`${base}/api/exportacion/ranking/${vacId}`, '_blank')
+async function exportarVacante (vacId) {
+  try {
+    const res = await api.get(`/api/exportacion/ranking/${vacId}`, {
+      responseType: 'blob'
+    })
+
+    const blob = new Blob([res.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Ranking_Vacante_${vacId}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    $q.notify({
+      type: 'positive',
+      message: 'Excel descargado'
+    })
+  } catch (err) {
+    console.error('Error exportando ranking', err)
+    $q.notify({
+      type: 'negative',
+      message: 'No se pudo exportar la lista de candidatos'
+    })
+  }
 }
+
 
 // ======== HELPERS PORCENTAJES ========
 function formatPercent (val) {

@@ -959,7 +959,7 @@ export default {
   margin: 0;
   padding: 24px 64px 40px;
   box-sizing: border-box;
-  margin-top: -20px;
+  margin-top: 16px; /* o 24px, a tu gusto */
 }
 
 .content-grid {

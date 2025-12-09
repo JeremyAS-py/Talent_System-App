@@ -1,49 +1,74 @@
+// src/router/routes.js
+
+const ROLE_ADMIN = 'Admin'
+const ROLE_RRHH = 'RRHH'
+const ROLE_BM = 'Business Manager'
+
 const routes = [
-  // Ruta inicial: Login
+  // LOGIN
   {
     path: '/',
     name: 'login',
     component: () => import('src/components/auth/LoginForm.vue'),
   },
 
-  // Ruta para la app principal con MainLayout
+  // APP PRINCIPAL
   {
     path: '/app',
     component: () => import('layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
     children: [
+      // cuando entras a /app te redirige a vista-general
       {
         path: '',
-        redirect: '/app/vista-general',
+        redirect: { name: 'vista-general' },
       },
+
+      // 1) VISTA GENERAL – todos los roles
       {
         path: 'vista-general',
         name: 'vista-general',
         component: () => import('pages/IndexPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // Skill Mapping (por ahora mismo componente; luego lo cambias)
+      // 2) SKILL MAPPING – todos los roles
       {
         path: 'skill-mapping',
         name: 'skill-mapping',
         component: () => import('pages/SkillMappingPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // Demanda de Talento
+      // 3) DEMANDA TALENTO – matching / ranking (Admin, RRHH, BM)
       {
         path: 'demanda-talento',
         name: 'demanda-talento',
         component: () => import('pages/DemandaTalentoPage.vue'),
-        // TODO: cambia a pages/DemandaTalentoPage.vue
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // Brechas de Skill
+      // 4) BRECHAS SKILL – todos los roles
       {
         path: 'brechas-skill',
         name: 'brechas-skill',
         component: () => import('pages/BrechasSkillPage.vue'),
-        // TODO: cambia a pages/BrechasSkillPage.vue
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
+
+      // 5) PERFIL COLABORADOR – todos ven (BM solo lectura en el front)
       {
         path: 'perfil-colaborador/:id',
         name: 'perfil-colaborador',
@@ -51,27 +76,61 @@ const routes = [
         props: (route) => ({
           colaboradorId: Number(route.params.id),
         }),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // Crear vacante
+      // 6) CREAR VACANTE – solo Admin y RRHH
       {
         path: 'crear-vacante',
         name: 'crear-vacante',
         component: () => import('pages/CreateVacancyPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+        },
       },
 
-      // Registrar colaborador (de momento reusa IndexPage)
+      // 7) APROBACIÓN POSTULACIONES – solo Admin y RRHH
+      {
+        path: 'aprobacion-postulaciones',
+        name: 'aprobacion-postulaciones',
+        component: () => import('pages/AprobacionPostulacionesPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+        },
+      },
+
+      // 8) REGISTRAR COLABORADOR – solo Admin y RRHH
       {
         path: 'colaboradores/registrar',
         name: 'registrar-colaborador',
         component: () => import('components/RegisterColabForm.vue'),
-        meta: { hideHeader: true },
-        // TODO: cambia a pages/RegistrarColaboradorPage.vue cuando la crees
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+          hideHeader: true, // si quieres ocultar header en esta vista
+        },
+        // TODO: cuando exista, cambia a pages/RegistrarColaboradorPage.vue
+      },
+
+      // 9) AUDITORÍA – solo Admin
+      {
+        path: 'auditoria',
+        name: 'auditoria',
+        component: () => import('pages/AuditoriaPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN],
+        },
       },
     ],
   },
 
-  // Siempre al final
+  // 404 SIEMPRE AL FINAL
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),

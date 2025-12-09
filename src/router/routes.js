@@ -1,49 +1,52 @@
 const routes = [
-  // Ruta inicial: Login
+  // LOGIN
   {
     path: '/',
     name: 'login',
     component: () => import('src/components/auth/LoginForm.vue'),
   },
 
-  // Ruta para la app principal con MainLayout
+  // APP PRINCIPAL
   {
     path: '/app',
     component: () => import('layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
     children: [
+      // cuando entras a /app te redirige a vista-general
       {
         path: '',
-        redirect: '/app/vista-general',
+        redirect: { name: 'vista-general' },
       },
+
+      // VISTA GENERAL
       {
         path: 'vista-general',
         name: 'vista-general',
         component: () => import('pages/IndexPage.vue'),
       },
 
-      // Skill Mapping (por ahora mismo componente; luego lo cambias)
+      // SKILL MAPPING
       {
         path: 'skill-mapping',
         name: 'skill-mapping',
         component: () => import('pages/SkillMappingPage.vue'),
       },
 
-      // Demanda de Talento
+      // DEMANDA TALENTO
       {
         path: 'demanda-talento',
         name: 'demanda-talento',
         component: () => import('pages/DemandaTalentoPage.vue'),
-        // TODO: cambia a pages/DemandaTalentoPage.vue
       },
 
-      // Brechas de Skill
+      // BRECHAS SKILL
       {
         path: 'brechas-skill',
         name: 'brechas-skill',
         component: () => import('pages/BrechasSkillPage.vue'),
-        // TODO: cambia a pages/BrechasSkillPage.vue
       },
+
+      // PERFIL COLABORADOR
       {
         path: 'perfil-colaborador/:id',
         name: 'perfil-colaborador',
@@ -53,25 +56,30 @@ const routes = [
         }),
       },
 
-      // Crear vacante
+      // CREAR VACANTE
       {
         path: 'crear-vacante',
         name: 'crear-vacante',
         component: () => import('pages/CreateVacancyPage.vue'),
       },
 
-      // Registrar colaborador (de momento reusa IndexPage)
+      // REGISTRAR COLABORADOR
       {
         path: 'colaboradores/registrar',
         name: 'registrar-colaborador',
         component: () => import('components/RegisterColabForm.vue'),
-        meta: { hideHeader: true },
-        // TODO: cambia a pages/RegistrarColaboradorPage.vue cuando la crees
+      },
+
+      // AUDITORÍA (LA QUE TE DA PROBLEMA)
+      {
+        path: 'auditoria', // => /app/auditoria
+        name: 'auditoria',
+        component: () => import('pages/AuditoriaPage.vue'),
       },
     ],
   },
 
-  // Siempre al final
+  // 404 SIEMPRE AL FINAL
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),

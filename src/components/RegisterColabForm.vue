@@ -310,9 +310,6 @@
               emit-value
               map-options
               label="Nombre del Skill *"
-              use-input
-              fill-input
-              input-debounce="0"
               :rules="[(val) => !!val || 'Selecciona un skill']"
               @update:model-value="onSkillSelected"
             />
@@ -391,15 +388,12 @@
               emit-value
               map-options
               label="Nombre de la certificación *"
-              use-input
-              fill-input
-              input-debounce="0"
               :rules="[(val) => !!val || 'Selecciona una certificación']"
               @update:model-value="onCertSelected"
             />
 
             <!-- Descripción (se autocompleta pero se puede editar) -->
-            <q-input
+            <q-select
               dense
               outlined
               v-model="certDialog.form.descripcion"
@@ -511,7 +505,8 @@ export default {
       return /^[0-9]{8}$/.test(this.form.dni)
     },
     emailValid() {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.correo)
+      const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+      return emailRegex.test(this.form.correo)
     },
     passwordValid() {
       return !!this.form.password && this.form.password.length >= 8
@@ -864,10 +859,7 @@ export default {
 
         // 2) Registrar skills
         if (this.form.skills.length) {
-          await api.post(
-            `/api/ColaboradorSkill/${colaboradorId}/skills`,
-            this.form.skills
-          )
+          await api.post(`/api/ColaboradorSkill/${colaboradorId}/skills`, this.form.skills)
         }
 
         // 3) Registrar certificaciones (solo campos que el backend necesita)
@@ -877,10 +869,7 @@ export default {
             fechaObtencion: c.fechaObtencion, // 'YYYY-MM-DD'
           }))
 
-          await api.post(
-            `/api/ColaboradorCertificacion/${colaboradorId}`,
-            certPayload
-          )
+          await api.post(`/api/ColaboradorCertificacion/${colaboradorId}`, certPayload)
         }
 
         this.$q.notify({

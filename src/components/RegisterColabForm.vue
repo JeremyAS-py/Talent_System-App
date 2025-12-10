@@ -1,9 +1,38 @@
 <template>
   <div class="register-colab-page">
     <!-- HEADER AZUL -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="header-left">
+          <q-btn flat round dense icon="arrow_back" class="back-btn" @click="$router.back()" />
+          <div class="header-text">
+            <h1>Registro de nuevo Colaborador</h1>
+            <p>Movilidad interna inteligente basada en skills</p>
+          </div>
+        </div>
+        <q-icon name="group" size="48px" class="header-people-icon" />
+      </div>
+    </header>
 
     <!-- CONTENIDO BLANCO -->
     <main class="main-container">
+      <!-- HEADER LOCAL (igual estilo que Nueva Vacante) -->
+      <div class="row items-center q-mb-lg local-header">
+        <q-btn
+          flat
+          round
+          icon="arrow_back"
+          color="primary"
+          class="q-mr-sm"
+          @click="$router.back()"
+        />
+        <div>
+          <h4 class="title text-primary q-my-none">Nuevo Colaborador</h4>
+          <div class="subtitle text-grey-7">
+            Registra datos personales, skills y certificaciones
+          </div>
+        </div>
+      </div>
       <div class="content-grid">
         <!-- COLUMNA IZQUIERDA -->
         <div class="left-column">
@@ -52,6 +81,8 @@
                   outlined
                   v-model="form.password"
                   :type="showPassword ? 'password' : 'text'"
+                  :error="form.password !== '' && !passwordValid"
+                  error-message="La contraseña debe tener mínimo 8 caracteres."
                 >
                   <template #append>
                     <q-icon
@@ -1122,5 +1153,18 @@ export default {
   .card {
     padding: 20px;
   }
+}
+.local-header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
 }
 </style>

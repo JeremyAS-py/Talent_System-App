@@ -1,3 +1,9 @@
+// src/router/routes.js
+
+const ROLE_ADMIN = 'Admin'
+const ROLE_RRHH = 'RRHH'
+const ROLE_BM = 'Business Manager'
+
 const routes = [
   // LOGIN
   {
@@ -18,35 +24,51 @@ const routes = [
         redirect: { name: 'vista-general' },
       },
 
-      // VISTA GENERAL
+      // 1) VISTA GENERAL – todos los roles
       {
         path: 'vista-general',
         name: 'vista-general',
         component: () => import('pages/IndexPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // SKILL MAPPING
+      // 2) SKILL MAPPING – todos los roles
       {
         path: 'skill-mapping',
         name: 'skill-mapping',
         component: () => import('pages/SkillMappingPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // DEMANDA TALENTO
+      // 3) DEMANDA TALENTO – matching / ranking (Admin, RRHH, BM)
       {
         path: 'demanda-talento',
         name: 'demanda-talento',
         component: () => import('pages/DemandaTalentoPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // BRECHAS SKILL
+      // 4) BRECHAS SKILL – todos los roles
       {
         path: 'brechas-skill',
         name: 'brechas-skill',
         component: () => import('pages/BrechasSkillPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // PERFIL COLABORADOR
+      // 5) PERFIL COLABORADOR – todos ven (BM solo lectura en el front)
       {
         path: 'perfil-colaborador/:id',
         name: 'perfil-colaborador',
@@ -54,27 +76,56 @@ const routes = [
         props: (route) => ({
           colaboradorId: Number(route.params.id),
         }),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH, ROLE_BM],
+        },
       },
 
-      // CREAR VACANTE
+      // 6) CREAR VACANTE – solo Admin y RRHH
       {
         path: 'crear-vacante',
         name: 'crear-vacante',
         component: () => import('pages/CreateVacancyPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+        },
       },
 
-      // REGISTRAR COLABORADOR
+      // 7) APROBACIÓN POSTULACIONES – solo Admin y RRHH
+      {
+        path: 'aprobacion-postulaciones',
+        name: 'aprobacion-postulaciones',
+        component: () => import('pages/AprobacionPostulacionesPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+        },
+      },
+
+      // 8) REGISTRAR COLABORADOR – solo Admin y RRHH
       {
         path: 'colaboradores/registrar',
         name: 'registrar-colaborador',
         component: () => import('components/RegisterColabForm.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+          hideHeader: true, // si quieres ocultar header en esta vista
+        },
+        // TODO: cuando exista, cambia a pages/RegistrarColaboradorPage.vue
       },
 
-      // AUDITORÍA (LA QUE TE DA PROBLEMA)
+      // 9) AUDITORÍA – solo Admin
       {
-        path: 'auditoria', // => /app/auditoria
+        path: 'auditoria',
         name: 'auditoria',
         component: () => import('pages/AuditoriaPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN],
+        },
       },
     ],
   },

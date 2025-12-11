@@ -104,6 +104,15 @@ const routes = [
         },
       },
 
+      {
+        path: 'editar-colaborador/:id',
+        name: 'editar-colaborador',
+        component: () => import('pages/EditarColaboradorPage.vue'),
+        meta: {
+          requiresAuth: true,
+          allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
+        },
+      },
       // 8) REGISTRAR COLABORADOR – solo Admin y RRHH
       {
         path: 'colaboradores/registrar',

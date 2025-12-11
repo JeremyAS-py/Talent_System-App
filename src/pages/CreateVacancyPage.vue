@@ -68,7 +68,7 @@
                 <div>
                   <div class="section-title">Detalles de la Posición</div>
                   <div class="section-subtitle">
-                    Define la posición, área, rol estándar y nivel de urgencia
+                    Define la posición, rol estándar y nivel de urgencia
                   </div>
                 </div>
               </div>
@@ -79,28 +79,6 @@
                 filled
                 v-model="form.titulo"
                 label="Título de la Vacante (Ej. Senior Backend Dev) *"
-              />
-            </div>
-
-            <div class="col-12 col-sm-6">
-              <q-select
-                filled
-                v-model="form.departamento"
-                :options="departamentos"
-                option-label="nombre"
-                label="Departamento *"
-                @update:model-value="resetArea"
-              />
-            </div>
-
-            <div class="col-12 col-sm-6">
-              <q-select
-                filled
-                v-model="form.area"
-                :options="filteredAreas"
-                option-label="nombre"
-                label="Área Funcional *"
-                :disable="!form.departamento"
               />
             </div>
 
@@ -271,12 +249,6 @@
 
             <div class="q-gy-sm">
               <div class="row justify-between q-mb-sm">
-                <span class="text-grey-7">Área:</span>
-                <span class="text-weight-medium">
-                  {{ form.area?.nombre || '—' }}
-                </span>
-              </div>
-              <div class="row justify-between q-mb-sm">
                 <span class="text-grey-7">Rol:</span>
                 <span class="text-weight-medium">
                   {{ form.rol?.nombre || '—' }}
@@ -402,8 +374,6 @@ import { api } from 'boot/axios'
 const $q = useQuasar()
 
 // ======= CATALOGOS DESDE API =======
-const departamentos = ref([])   // /api/departamento
-const areas = ref([])           // /api/area/areas
 const cuentas = ref([])         // /api/cuenta/cuentas
 const proyectos = ref([])       // /api/proyecto/proyectos
 const roles = ref([])           // /api/perfil/perfiles (Perfil = Rol estándar)
@@ -417,8 +387,6 @@ const form = ref({
   cuenta: null,
   proyecto: null,
   titulo: '',
-  departamento: null,
-  area: null,
   rol: null,          // Perfil
   urgencia: null,
   fechaInicio: '',
@@ -439,8 +407,6 @@ const loadCatalogos = async () => {
     loadingCatalogos.value = true
 
     const [
-      depRes,
-      areaRes,
       cuentaRes,
       proyectoRes,
       perfilRes,
@@ -448,8 +414,6 @@ const loadCatalogos = async () => {
       skillRes,
       nivelRes
     ] = await Promise.all([
-      api.get('/api/departamento'),
-      api.get('/api/area/areas'),
       api.get('/api/cuenta/cuentas'),
       api.get('/api/proyecto/proyectos'),
       api.get('/api/perfil/perfiles'),
@@ -457,17 +421,6 @@ const loadCatalogos = async () => {
       api.get('/api/skill'),
       api.get('/api/niveldominio')
     ])
-
-    departamentos.value = depRes.data.map(d => ({
-      id: d.departamentoId,
-      nombre: d.nombre
-    }))
-
-    areas.value = areaRes.data.map(a => ({
-      id: a.areaId,
-      nombre: a.nombre,
-      departamentoId: a.departamentoId
-    }))
 
     cuentas.value = cuentaRes.data.map(c => ({
       id: c.cuentaId,
@@ -523,11 +476,6 @@ onMounted(() => {
 })
 
 // ======= COMPUTED (CASCADAS) =======
-const filteredAreas = computed(() => {
-  if (!form.value.departamento) return []
-  return areas.value.filter(a => a.departamentoId === form.value.departamento.id)
-})
-
 const filteredProyectos = computed(() => {
   if (!form.value.cuenta) return []
   return proyectos.value.filter(p => p.cuentaId === form.value.cuenta.id)
@@ -547,7 +495,6 @@ const secondarySkills = computed(() =>
 )
 
 // ======= HELPERS =======
-const resetArea = () => { form.value.area = null }
 const resetProyecto = () => { form.value.proyecto = null }
 
 const getUrgencyColor = (val) => {
@@ -642,9 +589,6 @@ const saveVacancy = async () => {
       type: 'positive',
       message: 'Vacante registrada exitosamente.'
     })
-
-    // Si quieres, aquí puedes limpiar el formulario:
-    // form.value = { ... }
   } catch (error) {
     console.error(error)
     const msg =

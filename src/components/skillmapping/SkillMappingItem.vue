@@ -119,7 +119,7 @@
             <q-btn dense round color="primary" size="md">
               <q-icon name="img:icons/SkillMapIcon/agregar.png" size="20px" />
             </q-btn>
-            <q-btn dense round color="primary" size="md">
+            <q-btn dense round color="primary" size="md" @click="editarColab">
               <q-icon name="img:icons/SkillMapIcon/editar.png" size="20px" />
             </q-btn>
             <q-btn dense round color="primary" size="md">
@@ -194,6 +194,14 @@ function irAPerfil() {
     params: { id: props.colaborador.colaboradorId },
   })
 }
+
+function editarColab() {
+  router.push({
+    name: 'editar-colaborador',
+    params: { id: props.colaborador.colaboradorId },
+  })
+}
+
 </script>
 
 <style scoped>

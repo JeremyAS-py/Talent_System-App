@@ -1,9 +1,27 @@
 <template>
   <div class="register-colab-page">
-    <!-- HEADER AZUL -->
-
     <!-- CONTENIDO BLANCO -->
     <main class="main-container">
+      <!-- HEADER INTERNO (similar a Nueva Vacante) -->
+      <section class="page-header">
+        <div class="page-header-left">
+          <q-btn
+            flat
+            round
+            dense
+            icon="arrow_back"
+            class="back-btn-header"
+            @click="$router.back()"
+          />
+          <div class="page-header-text">
+            <div class="page-title">Registrar colaborador</div>
+            <div class="page-subtitle">
+              Define los datos del colaborador para su registro interno.
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div class="content-grid">
         <!-- COLUMNA IZQUIERDA -->
         <div class="left-column">
@@ -166,7 +184,11 @@
               </div>
 
               <div v-else class="skills-table-body">
-                <div v-for="(skill, index) in form.skills" :key="index" class="skills-table-row">
+                <div
+                  v-for="(skill, index) in form.skills"
+                  :key="index"
+                  class="skills-table-row"
+                >
                   <div class="cell main">
                     <span>{{ skill.nombre }}</span>
                   </div>
@@ -512,9 +534,14 @@ export default {
         this.filteredAreaOptions = [...this.areaOptions]
         return
       }
-      this.filteredAreaOptions = this.areaOptions.filter((a) => a.departamentoId === newDept)
+      this.filteredAreaOptions = this.areaOptions.filter(
+        (a) => a.departamentoId === newDept
+      )
 
-      if (this.form.areaId && !this.filteredAreaOptions.some((a) => a.value === this.form.areaId)) {
+      if (
+        this.form.areaId &&
+        !this.filteredAreaOptions.some((a) => a.value === this.form.areaId)
+      ) {
         this.form.areaId = null
       }
     },
@@ -706,8 +733,8 @@ export default {
         nombre: this.skillDialog.form.nombre,
         tipoSkillId: this.skillDialog.form.tipoSkillId,
         categoria:
-          this.tipoSkillOptions.find((t) => t.value === this.skillDialog.form.tipoSkillId)?.label ||
-          this.skillDialog.form.categoria,
+          this.tipoSkillOptions.find((t) => t.value === this.skillDialog.form.tipoSkillId)
+            ?.label || this.skillDialog.form.categoria,
         nivelId: nivelInfo.value,
         nivelNombre: nivelInfo.label,
         aniosExp: this.skillDialog.form.aniosExp,
@@ -833,11 +860,11 @@ export default {
           await api.post(`/api/ColaboradorSkill/${colaboradorId}/skills`, this.form.skills)
         }
 
-        // 3) Registrar certificaciones (solo campos que el backend necesita)
+        // 3) Registrar certificaciones
         if (this.form.certificaciones.length) {
           const certPayload = this.form.certificaciones.map((c) => ({
             certificacionId: c.certificacionId,
-            fechaObtencion: c.fechaObtencion, // 'YYYY-MM-DD'
+            fechaObtencion: c.fechaObtencion,
           }))
 
           await api.post(`/api/ColaboradorCertificacion/${colaboradorId}`, certPayload)
@@ -875,51 +902,42 @@ export default {
   flex-direction: column;
 }
 
-/* HEADER */
-.header {
-  background-color: #2469bc;
-  height: 140px;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-.header-inner {
+/* HEADER TIPO "NUEVA VACANTE" */
+.page-header {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 32px;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  color: #ffffff;
 }
 
-.header-left {
+.page-header-left {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
-.back-btn {
+.back-btn-header {
   background: #ffffff;
   color: #2469bc;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 
-.header-text h1 {
-  margin: 0 0 4px;
-  font-size: 22px;
+.page-header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.page-title {
+  font-size: 24px;
   font-weight: 700;
+  color: #1b1c1d;
+  margin: 0 0 4px;
 }
 
-.header-text p {
+.page-subtitle {
+  font-size: 13px;
+  color: #5f6478;
   margin: 0;
-  font-size: 12px;
-}
-
-.header-people-icon {
-  color: #ffffff;
 }
 
 /* MAIN */
@@ -928,7 +946,7 @@ export default {
   margin: 0;
   padding: 24px 64px 40px;
   box-sizing: border-box;
-  margin-top: 16px; /* o 24px, a tu gusto */
+  margin-top: 16px;
 }
 
 .content-grid {
@@ -1105,10 +1123,6 @@ export default {
 
 /* RESPONSIVE */
 @media (max-width: 1024px) {
-  .header-inner {
-    padding: 0 16px;
-  }
-
   .main-container {
     padding: 16px;
     margin-top: 0;

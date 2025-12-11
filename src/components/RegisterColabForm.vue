@@ -1,19 +1,5 @@
 <template>
   <div class="register-colab-page">
-    <!-- HEADER AZUL -->
-    <header class="header">
-      <div class="header-inner">
-        <div class="header-left">
-          <q-btn flat round dense icon="arrow_back" class="back-btn" @click="$router.back()" />
-          <div class="header-text">
-            <h1>Registro de nuevo Colaborador</h1>
-            <p>Movilidad interna inteligente basada en skills</p>
-          </div>
-        </div>
-        <q-icon name="group" size="48px" class="header-people-icon" />
-      </div>
-    </header>
-
     <!-- CONTENIDO BLANCO -->
     <main class="main-container">
       <!-- HEADER LOCAL (igual estilo que Nueva Vacante) -->

@@ -79,12 +79,12 @@ const columns = [
     headerStyle: 'font-weight: bold;',
   },
   {
-    name: 'brecha',
+    name: 'brechaPercentage',
     label: '% Brecha',
     align: 'center',
-    field: 'brecha',
+    field: 'brechaPercentage',
     sortable: true,
-    format: (val) => `${val.toFixed(0)}%`,
+    format: (val) => `${(val * 100).toFixed(0)}%`,
     headerStyle: 'font-weight: bold;',
   },
   {

@@ -121,7 +121,6 @@ const routes = [
         meta: {
           requiresAuth: true,
           allowedRoles: [ROLE_ADMIN, ROLE_RRHH],
-          hideHeader: true, // si quieres ocultar header en esta vista
         },
         // TODO: cuando exista, cambia a pages/RegistrarColaboradorPage.vue
       },

@@ -70,6 +70,8 @@
                   outlined
                   v-model="form.password"
                   :type="showPassword ? 'password' : 'text'"
+                  :error="form.password !== '' && !passwordValid"
+                  error-message="La contraseña debe tener mínimo 8 caracteres."
                 >
                   <template #append>
                     <q-icon
@@ -1136,5 +1138,18 @@ export default {
   .card {
     padding: 20px;
   }
+}
+.local-header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
 }
 </style>

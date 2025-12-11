@@ -250,7 +250,7 @@
                 </q-chip>
               </div>
 
-              <!-- Botón Ver Perfil (placeholder) -->
+              <!-- Botón Ver Perfil -->
               <div class="col-1 flex flex-center">
                 <q-btn
                   flat
@@ -258,6 +258,7 @@
                   dense
                   style="font-size: 12px;"
                   label="Ver perfil"
+                  @click="irPerfilColaborador(colab.id)"
                 />
               </div>
             </div>
@@ -270,6 +271,7 @@
                 label="Ver Más"
                 class="q-px-xl"
                 style="text-transform: none; font-weight: 600;"
+                @click="irSkillMapping"
               />
             </div>
           </template>
@@ -326,7 +328,13 @@
                 <div class="candidatos-text">
                   {{ vac.candidatos }} candidatos
                 </div>
-                <q-btn flat dense color="primary" label="Ver detalle" />
+                <q-btn
+                  flat
+                  dense
+                  color="primary"
+                  label="Ver detalle"
+                  @click="irDemandaTalento"
+                />
               </div>
             </div>
 
@@ -341,6 +349,7 @@
               color="primary"
               label="Ver Más"
               class="btn-primary-link"
+              @click="irDemandaTalento"
             />
           </q-card-actions>
         </q-card>
@@ -404,6 +413,7 @@
               color="primary"
               label="Ver Brechas de Skills"
               class="btn-primary-link"
+              @click="irBrechasSkill"
             />
           </q-card-actions>
         </q-card>
@@ -415,6 +425,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { api } from 'boot/axios'
 import * as XLSX from 'xlsx'
 
@@ -425,6 +436,8 @@ import tendenciaIcon from 'assets/dashboard/tendencia.png'
 import busquedaIcon from 'assets/dashboard/busqueda.png'
 // Icono botón filtrar (bloque izquierdo)
 import filtrarIcon from 'assets/dashboard/filtrar.png'
+
+const router = useRouter()
 
 /* ====== ESTADO GENERAL ====== */
 const loading = ref(true)
@@ -459,6 +472,24 @@ const vacantesAbiertas = computed(
 const skillGaps = ref([])
 const loadingBrechas = ref(false)
 const vacanteBrechasTitulo = ref('')
+
+/* ====== NAVEGACIÓN ====== */
+const irSkillMapping = () => {
+  router.push({ name: 'skill-mapping' })
+}
+
+const irDemandaTalento = () => {
+  router.push({ name: 'demanda-talento' })
+}
+
+const irBrechasSkill = () => {
+  router.push({ name: 'brechas-skill' })
+}
+
+const irPerfilColaborador = (id) => {
+  if (!id) return
+  router.push({ name: 'perfil-colaborador', params: { id } })
+}
 
 /* ==== helpers ==== */
 function mapUrgencia (nombre) {
@@ -511,9 +542,9 @@ async function cargarDashboard () {
       const skillsArr = Array.isArray(c.skills) ? c.skills : []
 
       const cobertura =
-        c.coberturaGlobal ??
-        c.cobertura ??
-        c.porcentajeCobertura ??
+        c.coberturaGlobal ?? 
+        c.cobertura ?? 
+        c.porcentajeCobertura ?? 
         Math.min(100, (skillsArr.length || 0) * 5)
 
       return {

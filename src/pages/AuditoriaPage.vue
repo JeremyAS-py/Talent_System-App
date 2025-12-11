@@ -2,6 +2,24 @@
   <q-page class="panel-registro-acciones">
     <!-- CONTENIDO -->
     <div class="pra-content">
+      <!-- HEADER LOCAL -->
+      <div class="row items-center q-mb-md pra-local-header">
+        <q-btn
+          flat
+          round
+          icon="arrow_back"
+          color="primary"
+          class="q-mr-sm"
+          @click="$router.back()"
+        />
+        <div>
+          <h4 class="title text-primary q-my-none">Registro de Auditoría</h4>
+          <div class="subtitle text-grey-7">
+            Consulta las acciones realizadas por los usuarios en el sistema
+          </div>
+        </div>
+      </div>
+
       <!-- FILTROS -->
       <div class="pra-filters">
         <!-- Usuario -->
@@ -104,21 +122,19 @@ export default {
   data() {
     return {
       cargando: false,
-      // nombre y rol del usuario logueado (desde localStorage, cámbialo si usas otra cosa)
-      userName: localStorage.getItem('userName') || 'F. Rosales',
-      userRole: localStorage.getItem('userRole') || 'Administrador',
 
       filtros: {
         usuario: null,
-        rangoFechas: null, // { from: 'YYYY/MM/DD', to: 'YYYY/MM/DD' } (QDate range)
+        rangoFechas: null,
         tipoAccion: null,
       },
+
       usuariosOptions: [],
       tipoAccionOptions: [],
       acciones: [],
+
       columns: [
         { name: 'usuario', label: 'Usuario', field: 'usuario', align: 'left' },
-        { name: 'rol', label: 'Rol', field: 'rol', align: 'left' },
         { name: 'accion', label: 'Acción', field: 'accion', align: 'left' },
         { name: 'entidad', label: 'Entidad', field: 'entidad', align: 'left' },
         { name: 'idAfectado', label: 'Id Afectado', field: 'idAfectado', align: 'left' },
@@ -129,14 +145,12 @@ export default {
   },
 
   computed: {
-    // texto que se muestra en el input de rango de fechas
     rangoFechasLabel() {
       const r = this.filtros.rangoFechas
       if (!r || !r.from || !r.to) return ''
       return `${this.formatearFechaCorta(r.from)} - ${this.formatearFechaCorta(r.to)}`
     },
 
-    // filtro en front para usuario + tipo de acción
     accionesFiltradas() {
       return this.acciones.filter((a) => {
         const coincideUsuario = !this.filtros.usuario || a.usuario === this.filtros.usuario
@@ -157,31 +171,22 @@ export default {
         const token = localStorage.getItem('token')
         const params = {}
 
-        // enviamos tipo de acción al backend si está seleccionado
-        if (this.filtros.usuario !== null) {
-          params.usuarioId = this.filtros.usuario
-        }
+        if (this.filtros.usuario !== null) params.usuarioId = this.filtros.usuario
 
-        // si hay rango de fechas seleccionado, mandamos desde/hasta
         const r = this.filtros.rangoFechas
-        if (r && r.from && r.to) {
+        if (r?.from && r?.to) {
           params.desde = this.toIsoDate(r.from)
           params.hasta = this.toIsoDate(r.to)
         }
 
         const { data } = await api.get('/api/auditoria', {
           params,
-          headers: token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : {},
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         })
 
         this.acciones = data.map((item) => ({
           id: item.auditoriaId,
           usuario: item.usuarioEmail || '—',
-          rol: 'Admin', // cuando tu DTO traiga rol, lo mapeas acá
           accion: item.accion,
           entidad: item.entidad || '—',
           idAfectado: item.entidadId ?? '—',
@@ -189,24 +194,18 @@ export default {
           resultado: item.exitoso === false ? 'Error' : 'Éxito',
         }))
 
-        // combos
         this.usuariosOptions = [
           { label: 'Todos', value: null },
-          ...Array.from(new Set(this.acciones.map((a) => a.usuario).filter(Boolean))).map((u) => ({
+          ...[...new Set(this.acciones.map((a) => a.usuario))].map((u) => ({
             label: u,
             value: u,
           })),
         ]
 
-        this.tipoAccionOptions = Array.from(
-          new Set(this.acciones.map((a) => a.accion).filter(Boolean)),
-        )
+        this.tipoAccionOptions = [...new Set(this.acciones.map((a) => a.accion))]
       } catch (err) {
         console.error('Error cargando auditoría', err)
-        this.$q.notify({
-          type: 'negative',
-          message: 'No se pudo cargar el historial de auditoría',
-        })
+        this.$q.notify({ type: 'negative', message: 'No se pudo cargar la auditoría' })
       } finally {
         this.cargando = false
       }
@@ -214,7 +213,6 @@ export default {
 
     async aplicarFiltros() {
       await this.cargarAuditoria()
-      console.log('Filtros aplicados:', this.filtros)
     },
 
     formatearFecha(fechaIso) {
@@ -229,23 +227,13 @@ export default {
       })
     },
 
-    // para el label del rango (QDate usa 'YYYY/MM/DD')
     formatearFechaCorta(str) {
-      const [y, m, d] = str.split(/[/-]/).map((x) => Number(x))
-      if (!y || !m || !d) return str
-      const date = new Date(y, m - 1, d)
-      return date.toLocaleDateString('es-PE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit',
-      })
+      const [y, m, d] = str.split(/[/-]/).map(Number)
+      return new Date(y, m - 1, d).toLocaleDateString('es-PE')
     },
 
-    // pasa 'YYYY/MM/DD' a ISO para backend
     toIsoDate(str) {
-      const [y, m, d] = str.split(/[/-]/).map((x) => Number(x))
-      if (!y || !m || !d) return null
-      // 00:00 local; si quieres incluir el día completo, en backend puedes usar <= hasta.AddDays(1)
+      const [y, m, d] = str.split(/[/-]/).map(Number)
       return new Date(y, m - 1, d).toISOString()
     },
   },
@@ -411,5 +399,18 @@ export default {
 .pra-table-wrapper {
   max-height: 420px;
   overflow-y: auto;
+}
+.pra-local-header {
+  margin-bottom: 20px;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
 }
 </style>

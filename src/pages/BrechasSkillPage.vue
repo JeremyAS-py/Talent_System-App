@@ -3,76 +3,152 @@
     <div class="q-mb-xl">
       <div class="text-h4 text-weight-bolder text-primary">Brechas de Skill</div>
       <div class="text-subtitle1 text-grey-7">
-        Análisis de la demanda de skills vs. la disponibilidad actual de la plantilla.
+        Seleccione una vacante para analizar la demanda de skills vs. la disponibilidad actual.
       </div>
     </div>
 
-    <!-- Componente de Filtros -->
-    <brechas-filter @update:filters="handleFiltersUpdate" />
-
-    <div class="row q-col-gutter-lg">
-      <div class="col-9">
-        <!-- Componente de Gráfica -->
-        <brechas-chart :rows="tableRows" />
+    <div class="row q-col-gutter-xl">
+      <!-- Columna Izquierda: Lista de Vacantes -->
+      <div class="col-12 col-md-3">
+        <q-card flat bordered style="border-radius: 10px">
+          <q-card-section>
+            <div class="text-h6">Vacantes Disponibles</div>
+          </q-card-section>
+          <q-separator />
+          <q-list separator>
+            <q-inner-loading :showing="cargandoVacantes">
+              <q-spinner-dots size="50px" color="primary" />
+            </q-inner-loading>
+            <q-item
+              v-for="vacante in allVacantes"
+              :key="vacante.vacanteId"
+              clickable
+              v-ripple
+              :active="selectedVacancyId === vacante.vacanteId"
+              @click="onVacancySelect(vacante)"
+              active-class="bg-teal-1 text-grey-8"
+            >
+              <q-item-section>
+                <q-item-label lines="1">{{ vacante.titulo }}</q-item-label>
+                <q-item-label caption>ID: {{ vacante.vacanteId }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-if="!cargandoVacantes && allVacantes.length === 0">
+              <q-item-section class="text-center text-grey">
+                No se encontraron vacantes.
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
       </div>
 
-      <div class="col-3 column q-gutter-sm justify-start">
-        <q-btn
-          @click="exportarBrechas"
-          color="primary"
-          icon="file_download"
-          label="Exportar"
-          rounded
-          :disable="!activeFilters.vacanteId"
-        />
-      </div>
-    </div>
+      <!-- Columna Derecha: Gráficos y Tabla -->
+      <div class="col-12 col-md-9">
+        <div v-if="!selectedVacancyId" class="text-center text-grey-7 q-pa-xl">
+          <q-icon name="arrow_back" size="4rem" class="q-mb-md" />
+          <div class="text-h6">Por favor, seleccione una vacante de la lista.</div>
+        </div>
 
-    <div class="q-mt-xl"></div>
+        <div v-else>
+          <!-- Componente de Gráfica -->
+          <brechas-chart :rows="tableRows" />
 
-    <q-banner
-      v-if="tableError"
-      inline-actions
-      class="text-white bg-red q-mb-md"
-      style="border-radius: 10px"
-    >
-      <strong>Error al cargar los datos de la tabla:</strong>
-      <p>{{ tableError }}</p>
-    </q-banner>
+          <q-banner
+            v-if="tableError"
+            inline-actions
+            class="text-white bg-red q-mb-md q-mt-lg"
+            style="border-radius: 10px"
+          >
+            <strong>Error al cargar los datos de la tabla:</strong>
+            <p>{{ tableError }}</p>
+          </q-banner>
 
-    <div class="row q-col-gutter-lg">
-      <div class="col-9">
-        <!-- Componente de Tabla -->
-        <brechas-table
-          :rows="tableRows"
-          :is-loading="isTableLoading"
-          :vacancy-title="vacancyTitle"
-        />
+          <!-- Componente de Tabla -->
+          <div class="q-mt-xl">
+            <brechas-table
+              :rows="tableRows"
+              :is-loading="isTableLoading"
+              :vacancy-title="vacancyTitle"
+            />
+          </div>
+
+          <!-- Botones de Exportación -->
+          <div class="row justify-end q-mt-lg q-gutter-sm">
+            <q-btn
+              @click="descargarExcelCargado"
+              color="blue-8"
+              icon="visibility"
+              label="Visualizar Excel Cargado"
+              rounded
+              :disable="!excelDataBlob"
+            />
+            <q-btn
+              @click="exportarPdf"
+              color="red-8"
+              icon="picture_as_pdf"
+              label="Exportar Book PDF"
+              rounded
+              :disable="!selectedVacancyId || !pdfDataBlob"
+            />
+
+          </div>
+        </div>
       </div>
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { api } from 'boot/axios'
+import { useQuasar } from 'quasar'
 import * as XLSX from 'xlsx'
-import BrechasFilter from 'src/components/brechas/BrechasFilter.vue'
 import BrechasChart from 'src/components/brechas/BrechasChart.vue'
 import BrechasTable from 'src/components/brechas/BrechasTable.vue'
 
-// ... dentro de setup() de BrechasSkillsPage.vue
-// --- Estado de los Filtros ---
-const activeFilters = ref({})
+const $q = useQuasar()
+
+// --- Estado General ---
+const allVacantes = ref([])
+const cargandoVacantes = ref(false)
+const selectedVacancyId = ref(null)
+const vacancyTitle = ref('')
+const excelDataBlob = ref(null)
+const pdfDataBlob = ref(null)
+
 const tableRows = ref([])
 const tableError = ref(null)
 const isTableLoading = ref(false)
-const vacancyTitle = ref('') // <-- NUEVO: Para guardar el título
-// ...
 
-// --- Código CORREGIDO para BrechasSkillsPage.vue (fetchBrechasData) ---
+// --- Cargar Lista de Vacantes (al inicio) ---
+const fetchVacantes = async () => {
+  cargandoVacantes.value = true
+  try {
+    const response = await api.get('/api/Vacante')
+    allVacantes.value = response.data
+  } catch (error) {
+    console.error('Error fetching vacancies:', error)
+    $q.notify({ color: 'negative', message: 'No se pudieron cargar las vacantes.' })
+  } finally {
+    cargandoVacantes.value = false
+  }
+}
+
+onMounted(fetchVacantes)
+
+// --- Selección de Vacante ---
+const onVacancySelect = (vacante) => {
+  selectedVacancyId.value = vacante.vacanteId
+  vacancyTitle.value = vacante.titulo
+  excelDataBlob.value = null
+  pdfDataBlob.value = null
+  fetchBrechasData()
+  fetchPdfReport()
+}
+
+// --- Obtener Datos para la Tabla (Parseando Excel) ---
 const fetchBrechasData = async () => {
-  if (!activeFilters.value.vacanteId) {
+  if (!selectedVacancyId.value) {
     tableRows.value = []
     return
   }
@@ -81,72 +157,107 @@ const fetchBrechasData = async () => {
   tableError.value = null
 
   try {
-    const params = {
-      vacanteId: activeFilters.value.vacanteId,
-      areaId: activeFilters.value.areaId || null,
-    }
-
-    const response = await api.get('/api/exportacion/brechas', {
-      params,
+    const response = await api.get(`/api/exportacion/${selectedVacancyId.value}/brechas`, {
       responseType: 'arraybuffer',
+    })
+
+    excelDataBlob.value = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     })
 
     const data = new Uint8Array(response.data)
     const workbook = XLSX.read(data, { type: 'array' })
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
-    const json = XLSX.utils.sheet_to_json(worksheet, {
-      header: ['candidato', 'skill', 'disponible', 'requerido', 'brecha'],
-      range: 4, // Skip the header row in the Excel file
-    })
+    const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: 4 })
 
-    tableRows.value = json
+    const formattedRows = sheetData
+      .map((row) => {
+        const matchPercentage = parseFloat(row[5])
+        if (isNaN(matchPercentage)) return null
+        return {
+          candidato: row[1],
+          area: row[2],
+          departamento: row[3],
+          rolActual: row[4],
+          matchPercentage: matchPercentage,
+          brecha: (1 - matchPercentage) * 100,
+          estado: row[6],
+          skillsFaltantes: row[7],
+        }
+      })
+      .filter((row) => row !== null)
+
+    tableRows.value = formattedRows
   } catch (error) {
     console.error('Error fetching or parsing brechas data:', error)
-    tableError.value = error.message || 'Ocurrió un error desconocido.'
-    if (error.response) {
-      tableError.value += ` (Status: ${error.response.status})`
-    }
+    tableError.value =
+      'No se pudieron cargar o procesar los datos del reporte. ' + (error.message || '')
     tableRows.value = []
   } finally {
     isTableLoading.value = false
   }
 }
-// ------------------------------------------------------------------------
 
-const handleFiltersUpdate = (filters) => {
-  activeFilters.value = filters
-  vacancyTitle.value = filters.vacanteTitle // <-- NUEVO
-  fetchBrechasData()
+// --- Cargar PDF (al seleccionar vacante) ---
+const fetchPdfReport = async () => {
+  if (!selectedVacancyId.value) return
+  try {
+    const response = await api.get(`/api/exportacion/${selectedVacancyId.value}/pdf`, {
+      responseType: 'blob',
+    })
+    pdfDataBlob.value = response.data
+  } catch (error) {
+    console.error('Error fetching PDF report:', error)
+    pdfDataBlob.value = null
+    $q.notify({ color: 'negative', message: 'No se pudo cargar el reporte PDF.' })
+  }
 }
 
-const exportarBrechas = async () => {
-  if (!activeFilters.value.vacanteId) {
-    console.warn('Debe seleccionar una vacante para exportar.')
+// --- Descargar el Excel que se usó para la tabla ---
+const descargarExcelCargado = () => {
+  if (!excelDataBlob.value) {
+    $q.notify({ color: 'negative', message: 'No hay datos de Excel para descargar.' })
     return
   }
   try {
-    const params = {
-      vacanteId: activeFilters.value.vacanteId,
-      areaId: activeFilters.value.areaId || null,
-    }
-    const response = await api.get('/api/exportacion/brechas', {
-      params,
-      responseType: 'blob',
-    })
-
-    const blob = new Blob([response.data], { type: response.headers['content-type'] })
     const link = document.createElement('a')
-    link.href = window.URL.createObjectURL(blob)
-    link.download = `Brechas_Vacante_${params.vacanteId}.xlsx`
+    link.href = window.URL.createObjectURL(excelDataBlob.value)
+    link.download = `DatosCargados_${vacancyTitle.value.replace(/\s/g, '_')}.xlsx`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(link.href)
   } catch (error) {
-    console.error('Error exporting brechas:', error)
+    console.error('Error downloading loaded excel:', error)
+    $q.notify({ color: 'negative', message: 'Error al intentar descargar el archivo.' })
   }
 }
+
+
+const exportarPdf = () => {
+  if (!pdfDataBlob.value) {
+    $q.notify({
+      color: 'warning',
+      message: 'El reporte PDF aún no está listo o no se pudo cargar.',
+      icon: 'warning',
+    })
+    return
+  }
+  try {
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(pdfDataBlob.value)
+    link.download = `Book_Candidatos_${vacancyTitle.value.replace(/\s/g, '_')}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(link.href)
+  } catch (error) {
+    console.error('Error downloading PDF book:', error)
+    $q.notify({ color: 'negative', message: 'Error al intentar descargar el PDF.' })
+  }
+}
+
 </script>
 
 <style scoped>

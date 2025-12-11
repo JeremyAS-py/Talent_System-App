@@ -4,17 +4,17 @@
       <div v-if="vacancyTitle" class="text-h5 text-weight-bold q-mb-xs">
         {{ vacancyTitle }}
       </div>
-      <div class="text-h6 text-weight-bold q-mb-md">Detalle de Brechas</div>
+      <div class="text-h6 text-weight-bold q-mb-md">Detalle de Postulantes</div>
 
       <q-table
         :rows="rows"
         :columns="columns"
-        :row-key="(row) => row.candidato + row.skill"
+        row-key="candidato"
         flat
         bordered
         separator="horizontal"
         :loading="isLoading"
-        no-data-label="No hay datos para mostrar. Por favor, genere el reporte."
+        no-data-label="No hay datos para mostrar. Por favor, seleccione una vacante."
         :rows-per-page-options="[10, 20, 30, 50]"
         v-model:pagination="pagination"
       />
@@ -55,45 +55,54 @@ const columns = [
     headerStyle: 'font-weight: bold;',
   },
   {
-    name: 'habilidadRequerida',
-    label: 'Habilidad Requerida',
+    name: 'area',
+    label: 'Área',
     align: 'left',
-    field: 'skill',
+    field: 'area',
     sortable: true,
     headerStyle: 'font-weight: bold;',
   },
   {
-    name: 'nivelRequerido',
-    label: 'Nivel Requerido',
-    align: 'center',
-    field: 'requerido',
+    name: 'departamento',
+    label: 'Departamento',
+    align: 'left',
+    field: 'departamento',
     sortable: true,
     headerStyle: 'font-weight: bold;',
   },
   {
-    name: 'nivelActual',
-    label: 'Nivel Actual',
-    align: 'center',
-    field: 'disponible',
+    name: 'rolActual',
+    label: 'Rol Actual',
+    align: 'left',
+    field: 'rolActual',
     sortable: true,
     headerStyle: 'font-weight: bold;',
   },
   {
-    name: 'brecha',
-    label: 'Brecha (%)',
+    name: 'brechaPercentage',
+    label: '% Brecha',
     align: 'center',
-    field: 'brecha',
+    field: 'brechaPercentage',
+    sortable: true,
+    format: (val) => `${(val * 100).toFixed(0)}%`,
+    headerStyle: 'font-weight: bold;',
+  },
+  {
+    name: 'estado',
+    label: 'Estado',
+    align: 'left',
+    field: 'estado',
     sortable: true,
     headerStyle: 'font-weight: bold;',
-    classes: (row) => {
-      const brecha = row.brecha
-      if (typeof brecha === 'number') {
-        return brecha < 0
-          ? 'text-negative text-weight-bold'
-          : 'text-positive text-weight-bold'
-      }
-      return ''
-    },
+  },
+  {
+    name: 'skillsFaltantes',
+    label: 'Skills Faltantes (Brechas)',
+    align: 'left',
+    field: 'skillsFaltantes',
+    sortable: false,
+    headerStyle: 'font-weight: bold;',
+    style: 'white-space: pre-wrap;', // Para manejar saltos de línea si los hay
   },
 ]
 </script>

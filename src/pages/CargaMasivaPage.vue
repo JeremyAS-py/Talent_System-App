@@ -556,19 +556,50 @@ const uploadValidationAndExecute = async () => {
   }
 
   try {
+    // 1. Obtenemos todos los colaboradores actuales
     const resp = await api.get('/api/Colaborador')
     const existingCollaborators = resp.data || []
+
+    // 2. Creamos Sets para búsqueda rápida de DNI y EMAIL (normalizados)
     const existingDnis = new Set(existingCollaborators.map((c) => String(c.dni).trim()))
 
+    // Asumimos que el objeto de la API tiene una propiedad 'email' o 'correo'
+    const existingEmails = new Set(
+      existingCollaborators.map((c) =>
+        String(c.email || c.correo || '')
+          .trim()
+          .toLowerCase(),
+      ),
+    )
+
     let countIgnored = 0
+
+    // 3. Mapeamos y validamos ambas condiciones
     reviewTable.value = rowsData.map((col) => {
-      const isExisting = existingDnis.has(col.dni)
+      const inputDni = String(col.dni).trim()
+      const inputEmail = String(col.email || '')
+        .trim()
+        .toLowerCase()
+
+      const isDniDup = existingDnis.has(inputDni)
+      const isEmailDup = inputEmail && existingEmails.has(inputEmail) // Solo valida si el excel trae email
+
+      // Si cualquiera de los dos existe, marcamos como existente
+      const isExisting = isDniDup || isEmailDup
+
       if (isExisting) countIgnored++
+
+      // Determinamos el mensaje de error para la UI
+      let statusMsg = ''
+      if (isDniDup && isEmailDup) statusMsg = 'DNI y Email Existentes'
+      else if (isDniDup) statusMsg = 'DNI Existente'
+      else if (isEmailDup) statusMsg = 'Email Existente'
 
       return {
         ...col,
         isExisting,
         isIncluded: !isExisting,
+        statusMsg, // Guardamos el mensaje para mostrarlo en la tabla
       }
     })
 
@@ -590,12 +621,34 @@ const uploadValidationAndExecute = async () => {
 }
 
 // --- Confirmación ---
+// --- Confirmación ---
 const handleConfirmation = (wantsToReview) => {
   showConfirmationDialog.value = false
-  const rowsToCreate = reviewTable.value.filter((c) => c.isIncluded && !c.isExisting)
 
-  if (wantsToReview) showReviewDialog.value = true
-  else executeUpload(rowsToCreate, true)
+  // Verificamos si hay algún duplicado en la lista preparada
+  const hasDuplicates = reviewTable.value.some((c) => c.isExisting)
+
+  // Caso: Usuario quiere revisar explícitamente ("Sí, Revisar Archivo")
+  if (wantsToReview) {
+    showReviewDialog.value = true
+    return
+  }
+
+  // Caso: Usuario presionó "Continuar sin Revisar"
+  if (hasDuplicates) {
+    // REQUERIMIENTO 3: Si hay DNIs repetidos (y nuevos mezclados),
+    // aunque haya dicho "sin revisar", forzamos la vista de revisión
+    // para que vea cuáles se ignorarán.
+
+    // Opcional: Actualizar mensaje para dar contexto de por qué se abrió
+    // reviewMessage.value = "Se detectaron duplicados. Por favor verifique la lista antes de cargar."
+
+    showReviewDialog.value = true
+  } else {
+    // REQUERIMIENTO 1: No hay ningún repetido. Carga directa y exitosa.
+    const rowsToCreate = reviewTable.value.filter((c) => c.isIncluded && !c.isExisting)
+    executeUpload(rowsToCreate, true)
+  }
 }
 
 function updateReviewMessage() {
